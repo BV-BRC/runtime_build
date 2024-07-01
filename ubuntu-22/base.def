@@ -16,7 +16,7 @@ apt-get -y install apt-utils aria2 autoconf automake awscli cmake csh curl daemo
 	libsqlite3-dev libtbb-dev libxrender1 locales locales-all lsof lzma-dev \
 	maven nodejs openbabel parallel prodigal progressivemauve psmisc \
 	python3 rsync strace tigr-glimmer trnascan-se unzip valgrind vim wget \
-	zlib1g-dev libxml2-dev libgd-dev
+	zlib1g-dev libxml2-dev libgd-dev libparallel-iterator-perl
 
 mkdir /envs
 mkdir /build
