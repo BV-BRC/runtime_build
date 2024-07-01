@@ -3,7 +3,9 @@
 use strict;
 use Cwd 'abs_path';
 use Getopt::Long;
+use Data::Dumper;
 use File::Basename;
+use Parallel::Iterator qw(iterate_as_array);
 
 my @modules;
 
@@ -124,7 +126,29 @@ sub run
     $rc == 0 or die "Failed with rc=$rc: @cmd\n";
 }
 
+
 sub install_modules
+{
+    my($modules) = @_;
+    my @work;
+
+#    $#$modules = 10;
+    for my $i (0..$#$modules)
+    {
+	my($mod, $args) = @{$modules->[$i]};
+	push(@work, [$mod, $args, $i+1, scalar @$modules]);
+    }
+    my @ret = iterate_as_array(\&install_one_module, \@work);
+    for my $ent (@ret)
+    {
+	if ($ent->[0] ne 'ok')
+	{
+	    push(@failures, $ent);
+	}
+    }	
+}
+
+sub install_modules_seq
 {
     my($modules, $limit) = @_;
     my %limit;
@@ -143,27 +167,50 @@ sub install_modules
     {
 	my($mod, $args) = @$ment;
 	next unless $limit{$mod};
-	print "\nInstall $mod ($i of $n)\n";
-	$i++;
-	my $cmd = "$perl cpanm $args @global_args $mod";
-	print "$cmd\n";
-	my $rc = system($cmd);
-	if ($rc != 0)
+	
+	my $ret = install_one_module($mod, $args);
+	if ($ret->[0] ne 'ok')
 	{
-	    warn "Error $rc installing $args $mod\n";
-	    my $log;
-	    if (open(M, "<", "$workdir/build.log"))
-	    {
-		local $/;
-		undef $/;
-		$log = <M>;
-		close(M);
-	    }
-	    push(@failures, [$mod, $cmd, $log]);
+	    push(@failures, $ret);
 	}
     }
 }
 
+
+sub install_one_module
+{
+    my($mod, $args, $i, $n) = @_;
+
+    my $id;
+    if (ref($args))
+    {
+	my $work;
+	($id, $work) = @_;
+	($mod, $args, $i, $n) = @$work;
+    }
+	
+    print "\nInstall $mod ($i of $n)\n";
+    my $cmd = "$perl cpanm $args @global_args $mod";
+    print "$cmd\n";
+    my $rc = system($cmd);
+    if ($rc == 0)
+    {
+	return ["ok"];
+    }
+    else
+    {
+	warn "Error $rc installing $args $mod\n";
+	my $log;
+	if (open(M, "<", "$workdir/build.log"))
+	{
+	    local $/;
+	    undef $/;
+	    $log = <M>;
+	    close(M);
+	}
+	return [$mod, $cmd, $log];
+    }
+}
 
 #
 # Another nasty special case.
