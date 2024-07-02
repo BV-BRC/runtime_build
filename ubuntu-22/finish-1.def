@@ -1,5 +1,5 @@
 Bootstrap: localimage
-From: bvbrc-ubuntu-base.sif
+From: {{base}}
 
 %files
 
@@ -32,11 +32,11 @@ RT=$BASE/runtime
 mkdir -p /opt/patric-common/runtime
 
 cd /
-git clone https://github.com/olsonanl/bootstrap
-cd bootstrap
+git clone https://github.com/BV-BRC/runtime_build
+cd runtime_build
 
 export BUILD_TOOLS=$RT/build-tools
 
-./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap modules-core.dat
-./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap modules-bio-core.dat
-./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap modules-anno-core.dat
+./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-core.dat
+./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-bio-core.dat
+#./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-anno-core.dat

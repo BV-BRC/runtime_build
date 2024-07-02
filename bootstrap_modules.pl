@@ -8,6 +8,9 @@ use Getopt::Long;
 use Pod::Usage;
 use Data::Dumper;
 
+my $top_dir = dirname(abs_path($0));
+my $runtime_modules_dir = "$top_dir/runtime-modules";
+
 our $have_template;
 eval {
 	require Template;
@@ -135,10 +138,11 @@ while (<DAT>)
 
     next if /^\#/;
     my($dir, $cmd) = split(/\s+/, $_, 2);
-    die "error parsing $module_dat" unless ($dir && $cmd);
-    die "directory $dir does not exist" unless -d $dir;
-    die "directory $dir is not executable" unless -e $dir;
-    die "directory $dir is not writable" unless -w $dir;
+    my $mod_dir = "$runtime_modules_dir/$dir";
+    die "error parsing $module_dat" unless ($mod_dir && $cmd);
+    die "directory $mod_dir does not exist" unless -d $mod_dir;
+    die "directory $mod_dir is not executable" unless -e $mod_dir;
+    die "directory $mod_dir is not writable" unless -w $mod_dir;
 
     my $rec = [$dir, $dir, $cmd, { %attribs }, { %meta }];
     push(@modules, $rec);
@@ -213,11 +217,11 @@ for my $mod (@modules)
     my $to_run;
     if ($installwatch)
     {
-	$to_run = "cd $dir; $installwatch -o $log_dir/install_data.$tag $cmd 2>&1";
+	$to_run = "cd $runtime_modules_dir/$dir; $installwatch -o $log_dir/install_data.$tag $cmd 2>&1";
     }
     else
     {
-	$to_run = "cd $dir; $cmd 2>&1";
+	$to_run = "cd $runtime_modules_dir/$dir; $cmd 2>&1";
     }
     
     open(LOG, ">", "$log_dir/$tag") or die "Cannot open logfile $log_dir/$tag: $!";
