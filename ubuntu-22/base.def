@@ -11,7 +11,7 @@ apt-get -y update
 apt-get -y install build-essential
 
 apt-get -y install apt-utils aria2 autoconf automake awscli cmake csh curl daemonize elph git \
-	kmc libboost-dev libbz2-dev libdb-dev libffi-dev libkmc-dev liblog4cxx-dev \
+	kmc libboost-all-dev libbz2-dev libdb-dev libffi-dev libkmc-dev liblog4cxx-dev \
 	liblzma-dev libmysqlclient-dev libncurses5-dev libpng-dev libreadline-dev \
 	libsqlite3-dev libtbb-dev libxrender1 locales locales-all lsof lzma-dev \
 	maven nodejs openbabel parallel prodigal progressivemauve psmisc \
