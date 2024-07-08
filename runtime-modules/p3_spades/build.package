@@ -15,6 +15,8 @@ if (@ARGV)
 
 my $parallel = 8;
 
+my $top = $dest;
+
 my $vers = "4.0.0";
 $dest = "$dest/spades-$vers";
 
@@ -66,6 +68,14 @@ $ENV{PREFIX} = $dest;
 }
 $ENV{PREFIX} = $dest;
 run("./spades_compile.sh", "-DSPADES_USE_NCBISDK=ON");
+
+for my $exe (<$dest/bin/*>)
+{
+    my $base = basename($exe);
+    my $link_dest = "$top/bin/$base";
+    unlink($link_dest);
+    symlink($exe, $link_dest) or die "Symlink $exe $link_dest failed: $!";
+}
 
 sub run
 {
