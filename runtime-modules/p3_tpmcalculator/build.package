@@ -27,12 +27,12 @@ $ENV{PATH} = "$build_tools/bin:$ENV{PATH}";
 
 my $dir = "tpmcalculator";
 
-my $tag = "0.0.4";
+my $tag = "0.0.5";
 
-$ENV{PATH} = "$build_tools/bin:$top_dest/bin:$ENV{PATH}";
-$ENV{LDFLAGS} = "-Wl,-rpath,$build_tools/lib64 -Wl,-rpath,$build_tools/lib";
-$ENV{CC} = "$build_tools/bin/gcc";
-$ENV{CXX} = "$build_tools/bin/g++";
+#$ENV{PATH} = "$build_tools/bin:$top_dest/bin:$ENV{PATH}";
+#$ENV{LDFLAGS} = "-Wl,-rpath,$build_tools/lib64 -Wl,-rpath,$build_tools/lib";
+#$ENV{CC} = "$build_tools/bin/gcc";
+#$ENV{CXX} = "$build_tools/bin/g++";
 
 
 run("rm", "-rf", $dir);
@@ -45,17 +45,17 @@ if ($tag)
     run("git", "checkout", $tag);
 }
 
-run("git", "clone", "https://github.com/pezmaster31/bamtools.git");
-mkdir("bamtools/build");
-do_chdir("bamtools/build");
-run("cmake", "-DCMAKE_INSTALL_PREFIX=../..", "..");
-run("make", @parallel);
-run("make install");
+# run("git", "clone", "https://github.com/pezmaster31/bamtools.git");
+# mkdir("bamtools/build");
+# do_chdir("bamtools/build");
+# run("cmake", "-DCMAKE_INSTALL_PREFIX=../..", "..");
+# run("make", @parallel);
+# run("make install");
 
-do_chdir("../..");
+# do_chdir("../..");
 
-$ENV{CPPFLAGS} = "-I $top/include/bamtools/";
-$ENV{LDFLAGS} .= " -L $top/lib64 -Wl,-rpath,$top/lib64";
+# $ENV{CPPFLAGS} = "-I $top/include/bamtools/";
+# $ENV{LDFLAGS} .= " -L $top/lib64 -Wl,-rpath,$top/lib64";
 
 run("make", @parallel);
 
