@@ -16,7 +16,19 @@ apt-get -y install apt-utils aria2 autoconf automake awscli cmake csh curl daemo
 	libsqlite3-dev libtbb-dev libxrender1 locales locales-all lsof lzma-dev \
 	maven nodejs openbabel parallel prodigal progressivemauve psmisc \
 	python3 rsync strace tigr-glimmer trnascan-se unzip valgrind vim wget \
-	zlib1g-dev libxml2-dev libgd-dev libparallel-iterator-perl
+	zlib1g-dev libxml2-dev libgd-dev libparallel-iterator-perl \
+	freebayes libgetopt-long-descriptive-perl
+
+#
+# ngs tools
+#
+apt-get -y install bedtools hisat2 bwa libeigen3-dev bowtie2 canu sra-toolkit \
+	diamond-aligner minimap2 unicycler bandage pilon racon hmmer2 hmmer mafft circos \
+	figtree mcl raxml phyml capnproto mash muscle exonerate nanopolish  stringtie \
+	ivar fastq-pair bedops bbmap \
+	glimpse ant libhdf5-dev liblzma-dev uuid-dev \
+	libfreetype-dev libpcre3-dev libpcre2-dev libtiff-dev libharfbuzz-dev libfribidi-dev libproj-dev \
+	megahit primer3  libbamtools-dev bison flex
 
 mkdir /envs
 mkdir /build
