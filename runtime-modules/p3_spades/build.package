@@ -13,26 +13,20 @@ if (@ARGV)
     print STDERR "Overriding destination to $dest\n";
 }
 
-my $parallel = 4;
+my $parallel = 8;
 
-my $build_tools = "$dest/build-tools";
-if (-d $build_tools)
-{
-    $ENV{PATH} = "$build_tools/bin:$ENV{PATH}";
-
-    $ENV{CC} = "$build_tools/bin/gcc";
-    $ENV{CXX} = "$build_tools/bin/g++";
-}
-my $vers = "3.11.1";
+my $vers = "4.0.0";
 $dest = "$dest/spades-$vers";
 
 -d $dest || mkdir $dest;
 
-# http://spades.bioinf.spbau.ru/release3.9.0/SPAdes-3.9.0.tar.gz
+# https://github.com/ablab/spades/releases/download/v4.0.0/SPAdes-4.0.0.tar.gz
+
 
 my $package_dir = "SPAdes-${vers}";
 my $package_tar = "$package_dir.tar.gz";
-my $package_url = "http://spades.bioinf.spbau.ru/release${vers}/$package_tar";
+my $package_url = "https://github.com/ablab/spades/releases/download/v$vers/$package_tar";
+my $build_tools;
 
 if (! -s $package_tar)
 {
@@ -43,6 +37,8 @@ run("rm", "-rf", $package_dir);
 run("tar", "xzfp", $package_tar);
 chdir($package_dir) or die "cannot chdir $package_dir: $!";
 
+if (0)
+{
 #
 # We need to add an RPATH setting.
 # 
@@ -67,7 +63,9 @@ close(N);
 chdir("..");
 
 $ENV{PREFIX} = $dest;
-run("./spades_compile.sh");
+}
+$ENV{PREFIX} = $dest;
+run("./spades_compile.sh", "-DSPADES_USE_NCBISDK=ON");
 
 sub run
 {
