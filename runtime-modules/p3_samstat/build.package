@@ -14,25 +14,17 @@ if (@ARGV)
 print "using $dest as installation directory\n";
 system ("mkdir", "-p", $dest) unless -e $dest;
 
-# https://sourceforge.net/projects/samstat/files/samstat-1.5.1.tar.gz/download
-my $sam = "$dest/samtools-1.11";
-$ENV{CPPFLAGS} = "-I$sam/include";
-$ENV{LDFLAGS} = "-L$sam/lib";
-$ENV{PATH} = "$sam/bin:$ENV{PATH}";
+my $vers = "v2.0.0";
 
-my $ver = "1.5.1";
-my $location = "https://sourceforge.net/projects/samstat/files/samstat-$ver.tar.gz/download";
-my $file = "samstat-$ver.tar.gz";
-my $dir= "samstat-$ver";
-my $url = $location;
-run("curl", "--retry", 10, "-o", $file, "-L", $url);
+run("rm", "-rf", "samstat");
+run("git", "clone", "https://github.com/TimoLassmann/samstat");
+chdir("samstat") or die "cannot chdir samstat: $!";
+run("git", "checkout", $vers);
 
-system("rm", "-rf", $dir);
-run("tar",  "xvfz",  $file);
-
-chdir $dir or die "could not chdir $dir: $!";
-run("./configure", "--prefix", $dest);
-run("make", "-j", "6");
+mkdir("build") or die "cannot mkdir build: $!";
+chdir("build") or die "cannot chdir build: $!";
+run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "..");
+run("make"); # , "-j", "6");
 run("make", "install");
 
 sub run
