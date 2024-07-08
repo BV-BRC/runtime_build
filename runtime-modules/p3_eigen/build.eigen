@@ -34,6 +34,7 @@ system("rm", "-rf", $dir);
 run("mkdir", $dir);
 run("tar", "-C", $dir, "--strip-components", 1, "-x", "-z", "-p", "-f", $tarfile);
 
+run("mkdir", "-p", "$dest/include");
 run("cp", "-r", "$dir/Eigen", "$dest/include/.");
 
 sub run
