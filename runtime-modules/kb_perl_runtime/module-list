@@ -209,3 +209,8 @@ IO::AIO
 Statistics::LineFit
 Algorithm::Numerical::Shuffle
 PDL::Stats
+Inline::C
+Math::Random::MT::Auto
+Data::UUID::MT
+Mozilla::CA
+Statistics::R
