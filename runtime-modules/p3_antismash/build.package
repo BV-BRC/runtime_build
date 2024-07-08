@@ -20,7 +20,8 @@ if (@ARGV)
     $runtime = shift;
 }
 
-my $vers = "5-0-0rc1";
+my $vers = "7-1-0-1";
+#my $vers = "5-0-0rc1";
 my $url = "https://github.com/antismash/antismash";
 #my $url = "https://dl.secondarymetabolites.org/releases/$vers/antismash-$vers.tar.gz";
 
