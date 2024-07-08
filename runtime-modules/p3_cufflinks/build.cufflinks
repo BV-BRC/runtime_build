@@ -4,7 +4,7 @@ use strict;
 
 use Carp;
 use File::Basename;
-use Cwd 'abs_path';
+use Cwd qw(getcwd abs_path);
 
 my @parallel = ("-j", 8);
 
@@ -18,11 +18,13 @@ if (@ARGV)
 }
 
 my $samtools = "$dest/samtools-1.11";
+my $boost = "$dest/boost-1.59";
+
+my $here = getcwd;
 
 #
 # Cufflinks needs the older (1.59) Boost that is installed in $build_tools.
 #
-my $boost = $build_tools;
 $ENV{PATH} = "$build_tools/bin:$ENV{PATH}";
 $ENV{PATH} = "$dest/bin:$ENV{PATH}";
 $ENV{CFLAGS} = "-I$dest/include -D__STDC_LIMIT_MACROS -fcommon";
@@ -36,20 +38,37 @@ my $hash = "753c109e31818dcf7aa8a2c8ecdac4fa43d2ab9b";
 my $cuff_dir = "cufflinks";
 system("rm", "-rf", $cuff_dir);
 
+
+my $version = "2.2.1";
+my $cuff_dir = "cufflinks-$version";
+my $url = "http://cole-trapnell-lab.github.io/cufflinks/assets/downloads/cufflinks-$version.tar.gz";
+run("curl", "-o", "$cuff_dir.tar.gz", "-L", $url);
+
+run("rm", "-rf", $cuff_dir);
+run("tar", "xzfp", "$cuff_dir.tar.gz");
+
 #
 # Use bob's changes that fix threading 
 # 
-run("git", "clone", 'https://github.com/olsonanl/cufflinks-original', 'cufflinks');
+#run("git", "clone", 'https://github.com/olsonanl/cufflinks-original', 'cufflinks');
 #run("git", "clone", 'https://github.com/aswarren/cufflinks');
 #run("git", "clone", 'https://github.com/cole-trapnell-lab/cufflinks.git');
 
+#
+# Build from latest cufflinks release and patch for thread update and 
+# modern compiler build. (The use of 'using namespace std' along with bare
+# references to 'hash' and 'byte' causes namespace clashes).
+#
+
 chdir($cuff_dir) || die "cannot chdir $cuff_dir: $!";
+run("patch", "-p1", "-i", "$here/thread.diff");
+run("patch", "-p1", "-i", "$here/cufflinks.diff");
 #run("git", "checkout", $hash);
-run("./autogen.sh");
+#run("./autogen.sh");
 run("./configure", "--with-bam=$samtools", "--prefix=$dest", 
-	#"--with-boost-thread=$build_tools/lib/libboost_thread-mt.so", 
-	"--with-boost=$boost", "--with-boost-libdir=$boost/lib");
-run("make", @parallel);
+	"--with-eigen=$dest",
+	"--with-boost=$boost", );
+run("make", "BAM_LIB=-lbam -lhts", @parallel);
 run("make", "install");
 
 sub run
