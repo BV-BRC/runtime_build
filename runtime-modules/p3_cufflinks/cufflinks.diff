@@ -1,0 +1,575 @@
+diff -r -u cufflinks-2.2.1/src/codons.cpp cufflinks-2.2.1.modified/src/codons.cpp
+--- cufflinks-2.2.1/src/codons.cpp	2012-03-12 08:29:53.000000000 -0500
++++ cufflinks-2.2.1.modified/src/codons.cpp	2024-07-08 10:29:02.340461000 -0500
+@@ -48,9 +48,9 @@
+ 
+ unsigned short packCodon(char n1, char n2, char n3) {
+  //assumes they are uppercase already!
+- byte b1=n1-'A';
+- byte b2=n2-'A';
+- byte b3=n3-'A';
++ clbyte b1=n1-'A';
++ clbyte b2=n2-'A';
++ clbyte b3=n3-'A';
+  b1 |= (b2 << 5); 
+  b2 = (b2 >> 3) | (b3 << 2);
+  return ( ((unsigned short)b2) << 8) + b1;
+@@ -68,7 +68,7 @@
+ 
+ 
+ char Codon::translate() {
+- for (byte i=0;i<3;i++) nuc[i]=toupper(nuc[i]);
++ for (clbyte i=0;i<3;i++) nuc[i]=toupper(nuc[i]);
+  unsigned short aacode=packCodon(nuc[0], nuc[1], nuc[2]);
+  return codonTable[aacode];
+  }
+diff -r -u cufflinks-2.2.1/src/GBase.h cufflinks-2.2.1.modified/src/GBase.h
+--- cufflinks-2.2.1/src/GBase.h	2013-04-11 07:44:48.000000000 -0500
++++ cufflinks-2.2.1.modified/src/GBase.h	2024-07-08 10:29:02.393451000 -0500
+@@ -72,7 +72,7 @@
+ typedef uint16_t uint16;
+ 
+ typedef unsigned char uchar;
+-typedef unsigned char byte;
++typedef unsigned char clbyte;
+ 
+ #ifndef MAXUINT
+ #define MAXUINT ((unsigned int)-1)
+diff -r -u cufflinks-2.2.1/src/gdna.cpp cufflinks-2.2.1.modified/src/gdna.cpp
+--- cufflinks-2.2.1/src/gdna.cpp	2012-04-14 07:47:20.000000000 -0500
++++ cufflinks-2.2.1.modified/src/gdna.cpp	2024-07-08 10:29:02.395450000 -0500
+@@ -11,8 +11,8 @@
+ #define G_2BIT 2 // 10
+ #define T_2BIT 3 // 11
+ 
+-static byte ntCompTable[256];
+-static byte nt2bit[256]; //maps any character to a 2bit base value (with N = A)
++static clbyte ntCompTable[256];
++static clbyte nt2bit[256]; //maps any character to a 2bit base value (with N = A)
+ static char v_2bit2nt[4] = {'A','C','G','T'};
+ 
+ //----------------------
+@@ -21,9 +21,9 @@
+ 
+ //----------------------
+ 
+-byte gdna2bit(char* &nt, int n) {
++clbyte gdna2bit(char* &nt, int n) {
+ // Pack n bases into a byte (n can be 1..4)
+-byte out = 0;
++clbyte out = 0;
+ while (n && *nt) {
+     n--;
+     out <<= 2;
+@@ -43,7 +43,7 @@
+  return ntCompTable[(int)c];
+  }
+ 
+-char g2bit2base(byte v2bit) {
++char g2bit2base(clbyte v2bit) {
+  return v_2bit2nt[v2bit & 0x03 ];
+ }
+ 
+diff -r -u cufflinks-2.2.1/src/gdna.h cufflinks-2.2.1.modified/src/gdna.h
+--- cufflinks-2.2.1/src/gdna.h	2012-04-14 07:47:19.000000000 -0500
++++ cufflinks-2.2.1.modified/src/gdna.h	2024-07-08 10:29:02.396462000 -0500
+@@ -9,7 +9,7 @@
+ 
+ bool gDnaInit();
+ 
+-byte gdna2bit(char* &nt, int n=4); //pack n bases into a byte (n can be 1..4)
+-char g2bit2base(byte v2bit); //convert the 2-bit value into 'A', 'C', 'G' or 'T'
++clbyte gdna2bit(char* &nt, int n=4); //pack n bases into a byte (n can be 1..4)
++char g2bit2base(clbyte v2bit); //convert the 2-bit value into 'A', 'C', 'G' or 'T'
+ 
+ #endif
+diff -r -u cufflinks-2.2.1/src/gff.cpp cufflinks-2.2.1.modified/src/gff.cpp
+--- cufflinks-2.2.1/src/gff.cpp	2014-04-30 10:44:30.000000000 -0500
++++ cufflinks-2.2.1.modified/src/gff.cpp	2024-07-08 10:29:02.398461000 -0500
+@@ -21,7 +21,7 @@
+ const uint gfo_flag_DISCARDED        = 0x00000100;
+ const uint gfo_flag_LST_KEEP         = 0x00000200;
+ const uint gfo_flag_LEVEL_MSK        = 0x00FF0000;
+-const byte gfo_flagShift_LEVEL           = 16;
++const clbyte gfo_flagShift_LEVEL           = 16;
+ 
+ void gffnames_ref(GffNames* &n) {
+   if (n==NULL) n=new GffNames();
+diff -r -u cufflinks-2.2.1/src/gff.h cufflinks-2.2.1.modified/src/gff.h
+--- cufflinks-2.2.1/src/gff.h	2014-04-30 10:44:30.000000000 -0500
++++ cufflinks-2.2.1.modified/src/gff.h	2024-07-08 10:29:02.401451000 -0500
+@@ -43,7 +43,7 @@
+ extern const uint gfo_flag_LST_KEEP; //GffObj from GffReader::gflst is to be kept (not deallocated)
+                                      //when GffReader is destroyed
+ extern const uint gfo_flag_LEVEL_MSK; //hierarchical level: 0 = no parent
+-extern const byte gfo_flagShift_LEVEL;
++extern const clbyte gfo_flagShift_LEVEL;
+ 
+ extern bool gff_show_warnings;
+ 
+@@ -502,18 +502,18 @@
+     if (v) flags |= gfo_flag_CHILDREN_PROMOTED;
+       else flags &= ~gfo_flag_CHILDREN_PROMOTED;
+      }
+-  void setLevel(byte v) {
++  void setLevel(clbyte v) {
+     if (v==0) flags &= ~gfo_flag_LEVEL_MSK;
+          else flags &= ~(((uint)v) << gfo_flagShift_LEVEL);
+     }
+-  byte incLevel() {
++  clbyte incLevel() {
+     uint v=((flags & gfo_flag_LEVEL_MSK) >> gfo_flagShift_LEVEL);
+     v++;
+     flags &= ~(v << gfo_flagShift_LEVEL);
+     return v;
+     }
+-  byte getLevel() {
+-    return ((byte)((flags & gfo_flag_LEVEL_MSK) >> gfo_flagShift_LEVEL));
++  clbyte getLevel() {
++    return ((clbyte)((flags & gfo_flag_LEVEL_MSK) >> gfo_flagShift_LEVEL));
+     }
+ 
+   bool isValidTranscript() { 
+diff -r -u cufflinks-2.2.1/src/GHash.hh cufflinks-2.2.1.modified/src/GHash.hh
+--- cufflinks-2.2.1/src/GHash.hh	2013-04-11 07:44:47.000000000 -0500
++++ cufflinks-2.2.1.modified/src/GHash.hh	2024-07-08 10:29:02.402457000 -0500
+@@ -17,22 +17,22 @@
+ 	struct GHashEntry {
+ 	     char*   key;              // Key string
+ 	     bool    keyalloc;         //shared key flag (to not free the key chars)
+-	     int     hash;             // Hash value of key
++	     int     clhash;             // Hash value of key
+ 	     pointer data;              // Data
+ 	     bool    mark;             // Entry is marked
+ 	     };
+-  GHashEntry* hash;         // Hash
++  GHashEntry* clhash;         // Hash
+   int         fCapacity;     // table size
+   int         fCount;        // number of valid entries
+   int  fCurrentEntry;
+   char* lastkeyptr; //pointer to last key string added
+     //---------- Raw data retrieval (including empty entries
+   // Return key at position pos.
+-  const char* Key(uint pos) const { return hash[pos].key; }
++  const char* Key(uint pos) const { return clhash[pos].key; }
+   // return data OBJ* at given position
+-  OBJ* Data(uint pos) const { return (OBJ*) hash[pos].data; }
++  OBJ* Data(uint pos) const { return (OBJ*) clhash[pos].data; }
+   // Return mark flag of entry at position pos.
+-  bool Mark(uint pos) const { return hash[pos].mark; }
++  bool Mark(uint pos) const { return clhash[pos].mark; }
+   // Return position of first filled slot, or >= fCapacity
+   int First() const;
+   // Return position of last filled slot or -1
+@@ -88,14 +88,14 @@
+                                 //nextkey is SET to the corresponding key
+   GHashEntry* NextEntry() { //returns a pointer to a GHashEntry
+   	 register int pos=fCurrentEntry;
+-  	 while (pos<fCapacity && hash[pos].hash<0) pos++;
++  	 while (pos < fCapacity && clhash[pos].clhash < 0) pos++;
+   	 if (pos==fCapacity) {
+   	                 fCurrentEntry=fCapacity;
+   	                 return NULL;
+   	                 }
+   	              else {
+   	                 fCurrentEntry=pos+1;
+-  	                 return &hash[pos];
++  	                 return &clhash[pos];
+   	                 }
+   }
+   /// Clear all entries
+@@ -141,23 +141,23 @@
+ /*******************************************************************************/
+ // Construct empty hash
+ template <class OBJ> GHash<OBJ>::GHash(GFreeProc* freeProc) {
+-  GMALLOC(hash, sizeof(GHashEntry)*DEF_HASH_SIZE);
++  GMALLOC(clhash, sizeof(GHashEntry)*DEF_HASH_SIZE);
+   fCurrentEntry=-1;
+   fFreeProc=freeProc;
+   lastkeyptr=NULL;
+   for (uint i=0; i<DEF_HASH_SIZE; i++)
+-         hash[i].hash=-1; //this will be an indicator for 'empty' entries
++         clhash[i].clhash=-1; //this will be an indicator for 'empty' entries
+   fCapacity=DEF_HASH_SIZE;
+   fCount=0;
+   }
+ 
+ template <class OBJ> GHash<OBJ>::GHash(bool doFree) {
+-  GMALLOC(hash, sizeof(GHashEntry)*DEF_HASH_SIZE);
++  GMALLOC(clhash, sizeof(GHashEntry)*DEF_HASH_SIZE);
+   fCurrentEntry=-1;
+   lastkeyptr=NULL;
+   fFreeProc = (doFree)?&DefaultFreeProc : NULL;
+   for (uint i=0; i<DEF_HASH_SIZE; i++)
+-         hash[i].hash=-1; //this will be an indicator for 'empty' entries
++         clhash[i].clhash=-1; //this will be an indicator for 'empty' entries
+   fCapacity=DEF_HASH_SIZE;
+   fCount=0;
+   }
+@@ -177,21 +177,21 @@
+   if(n!=fCapacity){
+     GASSERT(m<=n);
+     GMALLOC(k, sizeof(GHashEntry)*n);
+-    for(i=0; i<n; i++) k[i].hash=-1;
++    for(i=0; i<n; i++) k[i].clhash=-1;
+     for(i=0; i<fCapacity; i++){
+-      h=hash[i].hash;
++      h=clhash[i].clhash;
+       if(0<=h){
+         p=HASH1(h,n);
+         GASSERT(0<=p && p<n);
+         x=HASH2(h,n);
+         GASSERT(1<=x && x<n);
+-        while(k[p].hash!=-1) p=(p+x)%n;
+-        GASSERT(k[p].hash<0);
+-        k[p]=hash[i];
++        while(k[p].clhash!=-1) p=(p+x)%n;
++        GASSERT(k[p].clhash<0);
++        k[p]=clhash[i];
+         }
+       }
+-    GFREE(hash);
+-    hash=k;
++    GFREE(clhash);
++    clhash=k;
+     fCapacity=n;
+     }
+   }
+@@ -210,13 +210,13 @@
+   GASSERT(1<=x && x<fCapacity);
+   i=-1;
+   n=fCapacity;
+-  while(n && hash[p].hash!=-1){
+-    if ((i==-1)&&(hash[p].hash==-2)) i=p;
+-    if (hash[p].hash==h && strcmp(hash[p].key,ky)==0) {
+-      //replace hash data for this key!
+-      lastkeyptr=hash[p].key;
+-      hash[p].data = (void*) pdata;
+-      return (OBJ*)hash[p].data;
++  while(n && clhash[p].clhash!=-1){
++    if ((i==-1)&&(clhash[p].clhash==-2)) i=p;
++    if (clhash[p].clhash==h && strcmp(clhash[p].key,ky)==0) {
++      //replace clhash data for this key!
++      lastkeyptr=clhash[p].key;
++      clhash[p].data = (void*) pdata;
++      return (OBJ*)clhash[p].data;
+       }
+     p=(p+x)%fCapacity;
+     n--;
+@@ -225,13 +225,13 @@
+   GTRACE(("GHash::insert: key=\"%s\"\n",ky));
+   //GMessage("GHash::insert: key=\"%s\"\n",ky);
+   GASSERT(0<=i && i<fCapacity);
+-  GASSERT(hash[i].hash<0);
+-  hash[i].hash=h;
+-  hash[i].mark=mrk;
+-  hash[i].key=Gstrdup(ky);
+-  hash[i].keyalloc=true;
+-  lastkeyptr=hash[i].key;
+-  hash[i].data= (void*) pdata;
++  GASSERT(clhash[i].clhash<0);
++  clhash[i].clhash=h;
++  clhash[i].mark=mrk;
++  clhash[i].key=Gstrdup(ky);
++  clhash[i].keyalloc=true;
++  lastkeyptr=clhash[i].key;
++  clhash[i].data= (void*) pdata;
+   fCount++;
+   if((100*fCount)>=(MAX_LOAD*fCapacity)) Resize(fCount);
+   GASSERT(fCount<fCapacity);
+@@ -251,13 +251,13 @@
+   GASSERT(1<=x && x<fCapacity);
+   i=-1;
+   n=fCapacity;
+-  while(n && hash[p].hash!=-1){
+-    if((i==-1)&&(hash[p].hash==-2)) i=p;
+-    if(hash[p].hash==h && strcmp(hash[p].key,ky)==0){
+-      //replace hash data for this key!
+-      lastkeyptr=hash[p].key;
+-      hash[p].data = (void*) pdata;
+-      return (OBJ*)hash[p].data;
++  while(n && clhash[p].clhash!=-1){
++    if((i==-1)&&(clhash[p].clhash==-2)) i=p;
++    if(clhash[p].clhash==h && strcmp(clhash[p].key,ky)==0){
++      //replace clhash data for this key!
++      lastkeyptr=clhash[p].key;
++      clhash[p].data = (void*) pdata;
++      return (OBJ*)clhash[p].data;
+       }
+     p=(p+x)%fCapacity;
+     n--;
+@@ -266,13 +266,13 @@
+   GTRACE(("GHash::insert: key=\"%s\"\n",ky));
+   //GMessage("GHash::insert: key=\"%s\"\n",ky);
+   GASSERT(0<=i && i<fCapacity);
+-  GASSERT(hash[i].hash<0);
+-  hash[i].hash=h;
+-  hash[i].mark=mrk;
+-  hash[i].key=(char *)ky;
+-  lastkeyptr=hash[i].key;
+-  hash[i].keyalloc=false;
+-  hash[i].data= (void*) pdata;
++  GASSERT(clhash[i].clhash<0);
++  clhash[i].clhash=h;
++  clhash[i].mark=mrk;
++  clhash[i].key=(char *)ky;
++  lastkeyptr=clhash[i].key;
++  clhash[i].keyalloc=false;
++  clhash[i].data= (void*) pdata;
+   fCount++;
+   if((100*fCount)>=(MAX_LOAD*fCapacity)) Resize(fCount);
+   GASSERT(fCount<fCapacity);
+@@ -293,16 +293,16 @@
+   GASSERT(1<=x && x<fCapacity);
+   i=-1;
+   n=fCapacity;
+-  while(n && hash[p].hash!=-1){
+-    if((i==-1)&&(hash[p].hash==-2)) i=p;
+-    if(hash[p].hash==h && strcmp(hash[p].key,ky)==0){
+-      if(hash[p].mark<=mrk){
++  while(n && clhash[p].clhash!=-1){
++    if((i==-1)&&(clhash[p].clhash==-2)) i=p;
++    if(clhash[p].clhash==h && strcmp(clhash[p].key,ky)==0){
++      if(clhash[p].mark<=mrk){
+         GTRACE(("GHash::replace: %08x: replacing: \"%s\"\n",this,ky));
+-        if (FREEDATA) (*fFreeProc)(hash[p].data);
+-        hash[p].mark=mrk;
+-        hash[p].data=pdata;
++        if (FREEDATA) (*fFreeProc)(clhash[p].data);
++        clhash[p].mark=mrk;
++        clhash[p].data=pdata;
+         }
+-      return hash[p].data;
++      return clhash[p].data;
+       }
+     p=(p+x)%fCapacity;
+     n--;
+@@ -310,11 +310,11 @@
+   if(i==-1) i=p;
+   GTRACE(("GHash::replace: %08x: inserting: \"%s\"\n",this,ky));
+   GASSERT(0<=i && i<fCapacity);
+-  GASSERT(hash[i].hash<0);
+-  hash[i].hash=h;
+-  hash[i].mark=mrk;
+-  hash[i].key=Gstrdup(ky);
+-  hash[i].data=pdata;
++  GASSERT(clhash[i].clhash<0);
++  clhash[i].clhash=h;
++  clhash[i].mark=mrk;
++  clhash[i].key=Gstrdup(ky);
++  clhash[i].data=pdata;
+   fCount++;
+   if((100*fCount)>=(MAX_LOAD*fCapacity)) Resize(fCount);
+   GASSERT(fCount<fCapacity);
+@@ -335,15 +335,15 @@
+     GASSERT(1<=x && x<fCapacity);
+     GASSERT(fCount<fCapacity);
+     n=fCapacity;
+-    while(n && hash[p].hash!=-1){
+-      if(hash[p].hash==h && strcmp(hash[p].key,ky)==0){
++    while(n && clhash[p].clhash!=-1){
++      if(clhash[p].clhash==h && strcmp(clhash[p].key,ky)==0){
+         GTRACE(("GHash::remove: %08x removing: \"%s\"\n",this,ky));
+-        hash[p].hash=-2;
+-        hash[p].mark=false;
+-        if (hash[p].keyalloc) GFREE((hash[p].key));
+-        if (FREEDATA) (*fFreeProc)(hash[p].data);
+-        hash[p].key=NULL;
+-        hash[p].data=NULL;
++        clhash[p].clhash=-2;
++        clhash[p].mark=false;
++        if (clhash[p].keyalloc) GFREE((clhash[p].key));
++        if (FREEDATA) (*fFreeProc)(clhash[p].data);
++        clhash[p].key=NULL;
++        clhash[p].data=NULL;
+         fCount--;
+         if((100*fCount)<=(MIN_LOAD*fCapacity)) Resize(fCount);
+         GASSERT(fCount<fCapacity);
+@@ -370,8 +370,8 @@
+     GASSERT(1<=x && x<fCapacity);
+     GASSERT(fCount<fCapacity);
+     n=fCapacity;
+-    while(n && hash[p].hash!=-1){
+-      if(hash[p].hash==h && strcmp(hash[p].key,ky)==0){
++    while(n && clhash[p].clhash!=-1){
++      if(clhash[p].clhash==h && strcmp(clhash[p].key,ky)==0){
+         return true;
+         }
+       p=(p+x)%fCapacity;
+@@ -393,10 +393,10 @@
+     GASSERT(1<=x && x<fCapacity);
+     GASSERT(fCount<fCapacity);
+     n=fCapacity;
+-    while(n && hash[p].hash!=-1){
+-      if(hash[p].hash==h && strcmp(hash[p].key,ky)==0){
+-        if (keyptr!=NULL) *keyptr = hash[p].key;
+-        return (OBJ*)hash[p].data;
++    while(n && clhash[p].clhash!=-1){
++      if(clhash[p].clhash==h && strcmp(clhash[p].key,ky)==0){
++        if (keyptr!=NULL) *keyptr = clhash[p].key;
++        return (OBJ*)clhash[p].data;
+         }
+       p=(p+x)%fCapacity;
+       n--;
+@@ -412,34 +412,34 @@
+ 
+ template <class OBJ> char* GHash<OBJ>::NextKey() {
+  register int pos=fCurrentEntry;
+- while (pos<fCapacity && hash[pos].hash<0) pos++;
++ while (pos<fCapacity && clhash[pos].clhash<0) pos++;
+  if (pos==fCapacity) {
+                  fCurrentEntry=fCapacity;
+                  return NULL;
+                  }
+               else {
+                  fCurrentEntry=pos+1;
+-                 return hash[pos].key;
++                 return clhash[pos].key;
+                  }
+ }
+ 
+ template <class OBJ> OBJ* GHash<OBJ>::NextData() {
+  register int pos=fCurrentEntry;
+- while (pos<fCapacity && hash[pos].hash<0) pos++;
++ while (pos<fCapacity && clhash[pos].clhash<0) pos++;
+  if (pos==fCapacity) {
+                  fCurrentEntry=fCapacity;
+                  return NULL;
+                  }
+               else {
+                  fCurrentEntry=pos+1;
+-                 return (OBJ*)hash[pos].data;
++                 return (OBJ*)clhash[pos].data;
+                  }
+ 
+ }
+ 
+ template <class OBJ> OBJ* GHash<OBJ>::NextData(char* &nextkey) {
+  register int pos=fCurrentEntry;
+- while (pos<fCapacity && hash[pos].hash<0) pos++;
++ while (pos<fCapacity && clhash[pos].clhash<0) pos++;
+  if (pos==fCapacity) {
+                  fCurrentEntry=fCapacity;
+                  nextkey=NULL;
+@@ -447,8 +447,8 @@
+                  }
+               else {
+                  fCurrentEntry=pos+1;
+-                 nextkey=hash[pos].key;
+-                 return (OBJ*)hash[pos].data;
++                 nextkey=clhash[pos].key;
++                 return (OBJ*)clhash[pos].data;
+                  }
+ 
+ }
+@@ -457,16 +457,16 @@
+ // Get first non-empty entry
+ template <class OBJ> int GHash<OBJ>::First() const {
+   register int pos=0;
+-  while(pos<fCapacity){ if(0<=hash[pos].hash) break; pos++; }
+-  GASSERT(fCapacity<=pos || 0<=hash[pos].hash);
++  while(pos<fCapacity){ if(0<=clhash[pos].clhash) break; pos++; }
++  GASSERT(fCapacity<=pos || 0<=clhash[pos].clhash);
+   return pos;
+   }
+ 
+ // Get last non-empty entry
+ template <class OBJ> int GHash<OBJ>::Last() const {
+   register int pos=fCapacity-1;
+-  while(0<=pos){ if(0<=hash[pos].hash) break; pos--; }
+-  GASSERT(pos<0 || 0<=hash[pos].hash);
++  while(0<=pos){ if(0<=clhash[pos].clhash) break; pos--; }
++  GASSERT(pos<0 || 0<=clhash[pos].clhash);
+   return pos;
+   }
+ 
+@@ -474,8 +474,8 @@
+ // Find next valid entry
+ template <class OBJ> int GHash<OBJ>::Next(int pos) const {
+   GASSERT(0<=pos && pos<fCapacity);
+-  while(++pos <= fCapacity-1){ if(0<=hash[pos].hash) break; }
+-  GASSERT(fCapacity<=pos || 0<=hash[pos].hash);
++  while(++pos <= fCapacity-1){ if(0<=clhash[pos].clhash) break; }
++  GASSERT(fCapacity<=pos || 0<=clhash[pos].clhash);
+   return pos;
+   }
+ 
+@@ -483,8 +483,8 @@
+ // Find previous valid entry
+ template <class OBJ> int GHash<OBJ>::Prev(int pos) const {
+   GASSERT(0<=pos && pos<fCapacity);
+-  while(--pos >= 0){ if(0<=hash[pos].hash) break; }
+-  GASSERT(pos<0 || 0<=hash[pos].hash);
++  while(--pos >= 0){ if(0<=clhash[pos].clhash) break; }
++  GASSERT(pos<0 || 0<=clhash[pos].clhash);
+   return pos;
+   }
+ 
+@@ -493,17 +493,17 @@
+ template <class OBJ> void GHash<OBJ>::Clear(){
+   register int i;
+   for(i=0; i<fCapacity; i++){
+-    if(hash[i].hash>=0){
+-      if (hash[i].keyalloc) GFREE((hash[i].key));
++    if(clhash[i].clhash>=0){
++      if (clhash[i].keyalloc) GFREE((clhash[i].key));
+       if (FREEDATA)
+-            (*fFreeProc)(hash[i].data);
++            (*fFreeProc)(clhash[i].data);
+       }
+     }
+-  GFREE(hash);
+-  GMALLOC(hash, sizeof(GHashEntry)*DEF_HASH_SIZE);
++  GFREE(clhash);
++  GMALLOC(clhash, sizeof(GHashEntry)*DEF_HASH_SIZE);
+   //reinitialize it
+   for (i=0; i<DEF_HASH_SIZE; i++)
+-         hash[i].hash=-1; //this will be an indicator for 'empty' entries
++         clhash[i].clhash=-1; //this will be an indicator for 'empty' entries
+   fCapacity=DEF_HASH_SIZE;
+   fCount=0;
+   }
+@@ -550,12 +550,12 @@
+ template <class OBJ> GHash<OBJ>::~GHash(){
+   register int i;
+   for(i=0; i<fCapacity; i++){
+-    if(hash[i].hash>=0){
+-      if (hash[i].keyalloc) GFREE((hash[i].key));
+-      if (FREEDATA) (*fFreeProc)(hash[i].data);
++    if(clhash[i].clhash>=0){
++      if (clhash[i].keyalloc) GFREE((clhash[i].key));
++      if (FREEDATA) (*fFreeProc)(clhash[i].data);
+       }
+     }
+-  GFREE(hash);
++  GFREE(clhash);
+   }
+ 
+ #endif
+diff -r -u cufflinks-2.2.1/src/lemon/error.h cufflinks-2.2.1.modified/src/lemon/error.h
+--- cufflinks-2.2.1/src/lemon/error.h	2012-03-12 08:29:49.000000000 -0500
++++ cufflinks-2.2.1.modified/src/lemon/error.h	2024-07-08 10:31:57.841609000 -0500
+@@ -67,9 +67,9 @@
+     }
+ 
+     ExceptionMember& operator=(const ExceptionMember& copy) {
+-      if (ptr.get() == 0) return;
++      if (ptr.get() == 0) return *this;
+       try {
+-	if (!copy.valid()) return;
++	if (!copy.valid()) return *this;
+  	*ptr = copy.get();
+       } catch (...) {}
+     }
+diff -r -u cufflinks-2.2.1/src/locfit/c_plot.c cufflinks-2.2.1.modified/src/locfit/c_plot.c
+--- cufflinks-2.2.1/src/locfit/c_plot.c	2012-03-12 08:29:51.000000000 -0500
++++ cufflinks-2.2.1.modified/src/locfit/c_plot.c	2024-07-08 10:29:02.404472000 -0500
+@@ -9,7 +9,7 @@
+ 
+ plots *cpl, pl[MAXWIN];
+ extern device devps, devwin;
+-INT curwin;
++extern INT curwin;
+ char *psfn;
+ extern lfit lf;
+ extern pplot pp;
