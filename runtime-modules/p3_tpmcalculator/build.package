@@ -54,7 +54,7 @@ if ($tag)
 
 # do_chdir("../..");
 
-# $ENV{CPPFLAGS} = "-I $top/include/bamtools/";
+$ENV{CPPFLAGS} = "-I /usr/include/bamtools/";
 # $ENV{LDFLAGS} .= " -L $top/lib64 -Wl,-rpath,$top/lib64";
 
 run("make", @parallel);
