@@ -16,7 +16,7 @@ if (@ARGV)
     $top_dest = shift;
 }
 
-my $tag = "4.2.1";
+my $tag = "4.2.3";
 my $dest = "$top_dest/R-$tag";
 
 my $build_tools = $ENV{BUILD_TOOLS} // "$top_dest/build-tools";
@@ -26,15 +26,15 @@ system ("mkdir", "-p", $dest) unless -e $dest;
 
 my $dir;
 my $top = getcwd();
-$ENV{PATH} = "$build_tools/bin:$ENV{PATH}";
+#$ENV{PATH} = "$build_tools/bin:$ENV{PATH}";
 
 my $url = "http://cran.r-project.org/src/base/R-4/R-$tag.tar.gz";
 
-$ENV{PATH} = "$build_tools/bin:$top_dest/bin:$ENV{PATH}";
-$ENV{CPPFLAGS} = "-I$top_dest/include";
-$ENV{LDFLAGS} = "-Wl,-rpath,$build_tools/lib64 -Wl,-rpath,$build_tools/lib -L$top_dest/lib -Wl,-rpath,$top_dest/lib";
-$ENV{CC} = "$build_tools/bin/gcc";
-$ENV{CXX} = "$build_tools/bin/g++";
+#$ENV{PATH} = "$build_tools/bin:$top_dest/bin:$ENV{PATH}";
+#$ENV{CPPFLAGS} = "-I$top_dest/include";
+#$ENV{LDFLAGS} = "-Wl,-rpath,$build_tools/lib64 -Wl,-rpath,$build_tools/lib -L$top_dest/lib -Wl,-rpath,$top_dest/lib";
+#$ENV{CC} = "$build_tools/bin/gcc";
+#$ENV{CXX} = "$build_tools/bin/g++";
 
 $ENV{PKG_CONFIG_PATH} = "$top_dest/lib/pkgconfig";
 system("ls", $ENV{PKG_CONFIG_PATH});

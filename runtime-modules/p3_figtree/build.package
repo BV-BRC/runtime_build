@@ -21,10 +21,14 @@ if (@ARGV)
 $ENV{PATH} = "$dest/bin:$ENV{PATH}";
 
 
-my $version = '1.4.3';
+my $version = '1.4.4';
 my $file = "FigTree_v$version.tgz";
 my $dir = "FigTree_v$version";
 my $url = 'http://tree.bio.ed.ac.uk/download.php?id=96&num=3';
+
+# hah. Dir from 1.4.4 is actually 1.4.3.
+# 
+$dir = "FigTree_v1.4.3";
 
 system("rm", "-rf", $dir);
 
