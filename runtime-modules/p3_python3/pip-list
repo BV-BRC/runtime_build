@@ -23,6 +23,7 @@ quast
 openpyxl
 plotly
 umap-learn
+setuptools<58
 tqdm
 pyvcf
 requests
