@@ -27,3 +27,4 @@ tqdm
 pyvcf
 requests
 lxml
+redis

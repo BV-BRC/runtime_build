@@ -28,7 +28,9 @@ apt-get -y install bedtools hisat2 bwa libeigen3-dev bowtie2 canu sra-toolkit \
 	ivar fastq-pair bedops bbmap \
 	glimpse ant libhdf5-dev liblzma-dev uuid-dev \
 	libfreetype-dev libpcre3-dev libpcre2-dev libtiff-dev libharfbuzz-dev libfribidi-dev libproj-dev \
-	megahit primer3  libbamtools-dev bison flex nodejs npm libglpk-dev  lsb-release cufflinks
+	megahit primer3  libbamtools-dev bison flex nodejs npm libglpk-dev  lsb-release cufflinks redis
+
+systemctl disable redis
 
 #
 # Hack until p3-sra fixed
