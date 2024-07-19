@@ -20,3 +20,10 @@ umap
 xgboost
 cutadapt
 quast
+openpxl
+plotly
+umap-learn
+tqdm
+pyvcf
+requests
+lxml
