@@ -20,10 +20,11 @@ umap
 xgboost
 cutadapt
 quast
-openpxl
+openpyxl
 plotly
 umap-learn
 tqdm
 pyvcf
 requests
 lxml
+redis

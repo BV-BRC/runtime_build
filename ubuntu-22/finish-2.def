@@ -19,23 +19,14 @@ cd $BUILD_BASE
 git checkout master
 git pull
 
-cd $BUILD_MODS/p3_redis
-./build.package /opt/patric-common/runtime
-
-/opt/patric-common/runtime/bin/pip3 install redis
-
-mkdir -p $BASE/app-runtime/variation
-
 export BUILD_TOOLS=$RT/build-tools
 
-#
-# Inline build
-#
+# cd $BUILD_BASE
+# git clone --recursive https://github.com/PATRIC3/freebayes.git
+# cd freebayes
+# make
+# cp bin/freebayes bin/bamleftalign /opt/patric-common/app-runtime/variation/bin/
+# cp scripts/freebayes-parallel /opt/patric-common/app-runtime/variation/bin/freebayes-parallel
+# chmod +x /opt/patric-common/app-runtime/variation/bin/freebayes-parallel
 
-cd $BUILD_BASE
-git clone --recursive https://github.com/PATRIC3/freebayes.git
-cd freebayes
-make
-cp bin/freebayes bin/bamleftalign /opt/patric-common/app-runtime/variation/bin/
-cp scripts/freebayes-parallel /opt/patric-common/app-runtime/variation/bin/freebayes-parallel
-chmod +x /opt/patric-common/app-runtime/variation/bin/freebayes-parallel
+./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-ngs.dat
