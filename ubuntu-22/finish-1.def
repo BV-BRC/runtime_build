@@ -39,4 +39,5 @@ export BUILD_TOOLS=$RT/build-tools
 
 ./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-core.dat
 ./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-bio-core.dat
-#./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-anno-core.dat
+./bootstrap_modules.pl -d $RT  -m /ubuntu-bootstrap/modules-anno-core.dat
+
