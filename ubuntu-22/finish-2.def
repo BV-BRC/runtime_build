@@ -19,11 +19,6 @@ cd $BUILD_BASE
 git checkout master
 git pull
 
-apt-get -y install redis python2
-systemctl disable redis
-
-/opt/patric-common/runtime/bin/pip3 install redis
-
 export BUILD_TOOLS=$RT/build-tools
 
 # cd $BUILD_BASE
