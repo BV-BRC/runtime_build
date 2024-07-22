@@ -60,7 +60,7 @@ run("tpage --define rlib=$dest/lib/R/library r-packages.R  | $dest/bin/R --vanil
 
 do_chdir("$top_dest/bin");
 symlink("$dest/bin/R", "R");
-symlink("$dest/bin/R", "Rscript");
+symlink("$dest/bin/Rscript", "Rscript");
 
 
 sub download_tool
