@@ -51,10 +51,18 @@ for my $exe (<$dest/$path/bin/*>)
 }
 run("git", "clone", "https://github.com/JCVenterInstitute/VIGOR_DB.git", "$dest/$path/VIGOR_DB");
 open(C, ">", "$dest/$path/config/vigor.ini") or die "Cannot write $dest/$path/config/vigor.ini: $!";
+
+
+#
+# Exonerate is in the system path on Ubuntu
+#
+my $exonerate_path = "$dest/bin/exonerate";
+$exonerate_path = "/usr/bin/exonerate" if -x "/usr/bin/exonerate";
+
 print C <<END;
 reference_database_path=$dest/$path/VIGOR_DB/Reference_DBs
 temporary_directory=/tmp
-exonerate_path=$dest/bin/exonerate
+exonerate_path=$exonerate_path
 END
 
 sub do_chdir
