@@ -42,7 +42,7 @@ chmod(0755, $dest_exe) or die "Cannot chmod $dest_exe: $!";
 # Add the required scripts
 #
 
-for my $script (qw(freebayes-parallel fasta_generate_regions.py))
+for my $script (qw(freebayes-parallel fasta_generate_regions.py vcffirstheader ))
 {
     my $dest_exe = "$dest/bin/$script";
     unlink($dest_exe);
