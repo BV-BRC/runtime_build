@@ -40,7 +40,18 @@ for my $file (<*.py>, <DiversityTools/*.py>)
 {
     my $f = basename($file);
     print "Install $file\n";
-    copy($file, "$dest/bin/$f") or die "Cannot copy $file to $dest/bin/$f: $!";
+    my $dstfile = "$dest/bin/$f";
+
+    open(IN, "<", $file) or die "Cannot open $file: $!";
+    open(OUT, ">", $dstfile) or die "Cannot write $dstfile: $!";
+    print OUT "#!$dest/bin/python3\n";
+    while (<IN>)
+    {
+	print OUT "$_";
+    }
+    close(IN);
+    close(OUT);
+    # copy($file, "$dest/bin/$f") or die "Cannot copy $file to $dest/bin/$f: $!";
     chmod(0755, "$dest/bin/$f") or die "Cannot chmod $dest/bin/$f: $!";
 }
 
