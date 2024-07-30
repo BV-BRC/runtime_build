@@ -47,7 +47,19 @@ for my $f (<src/*>, qw(bracken bracken-build))
     if (-x $f)
     {
 	my $b = basename($f);
-	run("cp", $f, "$dest/bin/$b");
+	my $dstfile = "$dest/bin/$b";
+	open(IN, "<", $f) or die "Cannot open $f: $!";
+	open(OUT, ">", $dstfile) or die "Cannot write $dstfile: $!";
+	while (<IN>)
+	{
+	    s/\bpython\b/python3/g;
+	    print OUT $_;
+	}
+	close(IN);
+	close(OUT);
+	chmod(0755, $dstfile);
+
+	# run("cp", $f, "$dest/bin/$b");
     }
 }
 

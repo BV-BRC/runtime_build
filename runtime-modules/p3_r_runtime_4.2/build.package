@@ -55,6 +55,8 @@ run("./configure", @opts);
 run("make", @parallel);
 run("make", "install");
 
+export R_REMOTES_UPGRADE=never
+
 do_chdir($top);
 run("tpage --define rlib=$dest/lib/R/library r-packages.R  | $dest/bin/R --vanilla --slave");
 
