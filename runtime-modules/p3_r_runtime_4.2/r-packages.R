@@ -8,6 +8,8 @@ install.packages ("gridExtra", repos = "http://cran.wustl.edu")
 install.packages ("svglite", repos = "http://cran.wustl.edu")
 install.packages ("argparse", repos = "http://cran.wustl.edu")
 install.packages ("DT", repos = "http://cran.wustl.edu")
+install.packages ("pandoc", repos = "http://cran.wustl.edu")
+install.packages ("plyr", repos = "http://cran.wustl.edu")
 install.packages ("htmlwidgets", repos = "http://cran.wustl.edu")
 install.packages ("promises", repos = "http://cran.wustl.edu")
 
