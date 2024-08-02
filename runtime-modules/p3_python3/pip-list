@@ -12,7 +12,7 @@ sphinxcontrib-spelling
 sphinxcontrib-websupport
 matplotlib
 biopython
-pandas
+pandas<2
 multiqc
 HTSeq
 RSeQC
