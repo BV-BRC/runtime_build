@@ -2,13 +2,10 @@ biopython==1.76
 oauth2
 setuptools
 MySQL-python
-SQLAlchemy
-python-novaclient
 numpy
 matplotlib
 sphinx
 tornado
-rpy2
 beautifulsoup
 httplib2
 flup
@@ -24,7 +21,6 @@ chardet
 oauthlib
 pyasn1
 rsa==4.5
-pyyaml
 jsonschema
 poster
 sphinx-http-domain
@@ -53,7 +49,6 @@ cherrypy
 ipython
 pycolor
 requests_toolbelt
-pandas==0.16
 scikit-learn
 yapsy
 treeinterpreter
