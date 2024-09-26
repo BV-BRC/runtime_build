@@ -1,5 +1,4 @@
 options(Ncpus = 12)
-<<<<<<< HEAD
 install.packages ("ggplot2", repos = "https://cloud.r-project.org")
 install.packages ("svglite", repos = "https://cloud.r-project.org")
 install.packages ("gridExtra", repos = "https://cloud.r-project.org")
