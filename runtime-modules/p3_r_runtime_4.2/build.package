@@ -43,6 +43,7 @@ system("ls", $ENV{PKG_CONFIG_PATH});
 #$ENV{R_LIBS} = $r_libdir;
 
 my $dir = download_tool($url);
+goto x;
 
 run("rm", "-rf", "$dest/lib/R");
 #make_path($r_libdir);
@@ -56,7 +57,7 @@ run("make", @parallel);
 run("make", "install");
 
 $ENV{R_REMOTES_UPGRADE} = 'never';
-
+x:
 do_chdir($top);
 run("tpage --define rlib=$dest/lib/R/library r-packages.R  | $dest/bin/R --vanilla --slave");
 

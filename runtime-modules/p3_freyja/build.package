@@ -39,8 +39,8 @@ my $app_dest = "$dest/$app_name-$vers";
 
 system("rm", "-rf", $app_dest);
 
-run("$runtime/conda/bin/mamba", "create", "-p", $app_dest);
-run("$runtime/conda/bin/mamba", "install", "-y",
+run("$runtime/conda/bin/conda", "create", "-y", "-p", $app_dest);
+run("$runtime/conda/bin/conda", "install", "-y",
     "-p", $app_dest,
     "-c", "bioconda",
     "-c", "conda-forge",
