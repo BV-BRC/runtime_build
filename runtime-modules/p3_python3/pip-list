@@ -28,3 +28,6 @@ pyvcf
 requests
 lxml
 redis
+epiweeks
+cvxpy
+cvxpy-base

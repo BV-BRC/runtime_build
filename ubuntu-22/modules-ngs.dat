@@ -1,0 +1,88 @@
+p3_fastqc	./build.package
+# in apt repo
+# p3_bedtools	./build.package
+# p3_hisat	./build.package
+# kb_bwa	./build.package
+# p3_cutadapt	./build.package
+p3_samtools	./build.package
+p3_samtools	./build.package --version 1.11
+p3_htslib	./build.package
+p3_trimgalore	./build.package
+# Need eigen and boost here for old cufflinks
+p3_eigen	./build.eigen
+p3_boost_1.59	./build.package --subdir boost-1.59
+# p3_cufflinks	./build.cufflinks
+p3_plasmidfinder	./build.package
+p3_kraken2	./build.package
+p3_kma	./build.package
+p3_krona	./build.package
+# in apt repo
+# p3_bowtie2	./build.package
+p3_fasttree_stock	./build.package
+p3_fasttree	./build.package
+p3_gblocks	./build.package
+p3_cluster	./build.package
+p3_spades	./build.package
+p3_flye		./build.package
+# in apt repo
+# p3_canu	./build.package
+# p3_sra_toolkit	./build.package
+# p3_diamond	./build.package
+# p3_minimap2	./build.package
+# p3_unicycler	./build.package
+# p3_bandage	./build.package
+# p3_pilon	./build.package
+# p3_racon	./build.package
+p3_antismash	./build.package
+# in apt repo
+# p3_hmmer2	./build.package
+# p3_hmmer3	./build.package
+# kb_mafft	./build.mafft
+# kb_circos	./build.circos
+p3_figtree	./build.package
+p3_phanotate	./build.package
+p3_mosaik	./build.package
+# in apt repo
+# p3_mcl	./build.package
+# p3_raxml	./build.package
+# p3_phyml	./build.package
+# p3_capnproto	./build.package
+# p3_mash	./build.package
+# p3_muscle_36	./build.package
+p3_conda	./build.package
+# I think we aren't using these now
+# p3_medaka	./build.package
+# p3_artic	./build.package
+p3_bcftools	./build.package
+p3_bamclipper	./build.package
+# not used?
+# p3_cdc_sars2	./build.package
+p3_pangolin	./build.package
+p3_seqtk	./build.package
+p3_samstat	./build.package
+# in apt repo
+# p3_exonerate	./build.package
+p3_vigor4	./build.package
+# in apt repo
+# p3_nanopolish	./build.package
+# p3_stringtie	./build.package
+p3_phispy	./build.package
+# in apt repo
+# p4_ivar	./build.package
+# p3_fastq_pair	./build.package
+# p3_bedops	./build.package
+p3_tpmcalculator	./build.package
+p3_irma	./build.package
+p3_raxml_ng	./build.package
+p3_freyja	./build.package
+p3_hostile	./build.package
+p3_bracken	./build.package
+p3_krakentools	./build.package
+p3_pandoc	./build.package
+# in apt repo
+# p3_bbmap	./build.package
+p3_lofreq	./build.package
+p3_cladinator	./build.package
+kb_prok_tuxedo	./install_prok_tuxedo.sh
+p3_freebayes_precompiled	./build.package
+kb_snpeff	./snpeff_build.sh

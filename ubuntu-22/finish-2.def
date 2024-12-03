@@ -21,6 +21,9 @@ git pull
 
 export BUILD_TOOLS=$RT/build-tools
 
+/opt/patric-common/runtime/bin/pip3 install 'pulp<2.8'
+/opt/patric-common/runtime/bin/pip3 install snakemake
+
 # cd $BUILD_BASE
 # git clone --recursive https://github.com/PATRIC3/freebayes.git
 # cd freebayes
