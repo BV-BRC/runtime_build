@@ -88,3 +88,4 @@ p3_freebayes_precompiled	./build.package
 kb_snpeff	./snpeff_build.sh
 p3_mlst	./build.package
 p3_amrfinder	./build.package
+p3_mmseqs2	./build.package
