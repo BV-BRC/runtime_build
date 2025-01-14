@@ -20,7 +20,7 @@ if (@ARGV)
     $runtime = shift;
 }
 
-my $vers = "202402";
+my $vers = "202408";
 my $url = "https://wonder.cdc.gov/amd/flu/irma/flu-amd-$vers.zip";
 
 my $pigz_url = "https://zlib.net/pigz/pigz-2.8.tar.gz";
@@ -58,8 +58,18 @@ symlink "$app_dest/$dir/pigz", $pigz_link or die "Cannot symlink $app_dest/$dir/
 
 for my $exe (qw(IRMA LABEL))
 {
-    unlink "$dest/bin/$exe";
-    symlink "$app_dest/$dir/$exe", "$dest/bin/$exe" or die "Cannot symlink $app_dest/$dir/$exe to $dest/bin/$exe: $!";
+    my $epath = "$dest/bin/$exe";
+    unlink $epath;
+    #symlink "$app_dest/$dir/$exe", "$dest/bin/$exe" or die "Cannot symlink $app_dest/$dir/$exe to $dest/bin/$exe: $!";
+    open(E, ">", $epath) or die "Cannot write $epath: $!";
+    print E <<END;
+#!/bin/bash
+
+exec $app_dest/flu-amd/IRMA "\$@"
+END
+    close(E);
+    chmod(0755, $epath);
+
 }
 
 sub run

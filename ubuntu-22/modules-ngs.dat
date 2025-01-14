@@ -86,3 +86,5 @@ p3_cladinator	./build.package
 kb_prok_tuxedo	./install_prok_tuxedo.sh
 p3_freebayes_precompiled	./build.package
 kb_snpeff	./snpeff_build.sh
+p3_mlst	./build.package
+p3_amrfinder	./build.package
