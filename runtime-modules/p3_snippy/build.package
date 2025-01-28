@@ -1,0 +1,68 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use Cwd 'abs_path';
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+my $parallel = 8;
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+my $runtime = $dest;
+if (@ARGV)
+{
+    $runtime = shift;
+}
+
+my $p3 = "/disks/patric-common/runtime";
+if (! -d $p3)
+{
+    $p3 = $dest;
+    if (! -d $p3)
+    {
+	die "Can't find $p3\n";
+    }
+}
+my $vers = "v4.6.0";
+my $url = "https://github.com/tseemann/snippy.git";
+
+my $dir = "snippy";
+
+-d $dest || mkdir $dest;
+
+my $app_dest = "$dest/snippy-$vers";
+
+run("rm", "-rf", $app_dest);
+
+run("git", "clone", $url, $app_dest);
+
+chdir $app_dest or die "cannot chdir $app_dest: $!";
+run("git", "checkout", $vers);
+
+for my $prog (qw(snippy  snippy-clean_full_aln  snippy-core  snippy-multi  snippy-vcf_extract_subs  snippy-vcf_report  snippy-vcf_to_tab))
+{
+    unlink("$dest/bin/$prog");
+    open(WRAP, ">", "$dest/bin/$prog") or die "Cannot write $dest/bin/$prog: $!";
+    print WRAP <<END;
+#!/bin/bash
+
+export PATH=$app_dest/bin:$dest/bin:\$PATH
+
+$app_dest/bin/$prog "\$@"
+END
+    chmod(0755, \*WRAP);
+    close(WRAP);
+}
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
