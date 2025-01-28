@@ -1,0 +1,70 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use Cwd 'abs_path';
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+my $parallel = 8;
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+my $runtime = $dest;
+if (@ARGV)
+{
+    $runtime = shift;
+}
+
+my $p3 = "/disks/patric-common/runtime";
+if (! -d $p3)
+{
+    $p3 = $dest;
+    if (! -d $p3)
+    {
+	die "Can't find $p3\n";
+    }
+}
+my $vers = "3eab8463317cbe8de7ca6c3f54dbc2d87e23e143"; # current as of 1/28/25
+my $url = "https://github.com/admy55/CoreSNP";
+
+my $dir = "CoreSNP";
+
+-d $dest || mkdir $dest;
+
+my $app_dest = "$dest/CoreSNP-$vers";
+
+run("rm", "-rf", $app_dest);
+
+run("git", "clone", $url, $app_dest);
+
+chdir $app_dest or die "cannot chdir $app_dest: $!";
+run("git", "checkout", $vers);
+
+run("unzip", "plink_linux_x86_64_20230116.zip", "plink");
+
+unlink("$dest/bin/CoreSNP");
+open(WRAP, ">", "$dest/bin/CoreSNP") or die "Cannot write $dest/bin/CoreSNP:$ !";
+print WRAP <<END;
+#!/bin/bash
+
+export PATH=$app_dest/bin:$dest/bin:\$PATH
+
+python3 $app_dest/CoreSNP.py "\$@"
+END
+chmod(0755, \*WRAP);
+close(WRAP);
+
+unlink("$dest/bin/plink");
+symlink("$app_dest/plink", "$dest/bin/plink");
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
