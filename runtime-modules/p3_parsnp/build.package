@@ -1,0 +1,106 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use File::Copy;
+use File::Path qw(make_path);
+use Cwd 'abs_path';
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+my $parallel = 8;
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+my $runtime = $dest;
+if (@ARGV)
+{
+    $runtime = shift;
+}
+
+my $p3 = "/disks/patric-common/runtime";
+if (! -d $p3)
+{
+    $p3 = $dest;
+    if (! -d $p3)
+    {
+	die "Can't find $p3\n";
+    }
+}
+my $vers = "v2.1.2";
+my $url = "https://github.com/marbl/parsnp";
+
+my $dir = "parsnp";
+
+-d $dest || mkdir $dest;
+
+my $app_dest = "$dest/parsnp-$vers";
+goto x;
+run("rm", "-rf", $app_dest);
+run("rm", "-rf", $dir);
+
+run("git", "clone", $url, $dir);
+
+chdir $dir or die "cannot chdir $dir: $!";
+run("git", "checkout", $vers);
+
+chdir "muscle" or die "cannot chdir muscle: $!";
+run("./autogen.sh");
+run("./configure", "--prefix=$app_dest", "CXXFLAGS=-fopenmp");
+run("make", "-j", $parallel);
+run("make", "install");
+
+chdir ".." or die;
+
+run("./autogen.sh");
+run("./configure", "--with-libmuscle=$app_dest/include");
+run("make", "LDADD=-L$app_dest/lib -lMUSCLE-3.7");
+run("make", "install");
+x:
+chdir("parsnp") or die;
+#
+# executables to go into app dest
+#
+my @exe = qw(parsnp extend.py logger.py);
+
+#
+# Other files to go into app dest
+#
+my @inst = qw(partition.py template.ini);
+
+run("pwd");
+make_path("$app_dest/bin");
+
+for my $f (@exe, @inst)
+{
+system("ls -l $f");
+    copy($f, "$app_dest/bin/$f") or die "copy $f $app_dest/bin/$f failed: $!";
+}
+
+for my $f (@exe)
+{
+    unlink("$dest/bin/$f");
+    open(WRAP, ">", "$dest/bin/$f") or die "Cannot write $dest/bin/$f:$ !";
+    print WRAP <<END;
+#!/bin/bash
+
+export PATH=$app_dest/bin:$dest/bin:\$PATH
+
+python3 $app_dest/bin/$f "\$@"
+END
+    chmod(0755, \*WRAP);
+    close(WRAP);
+}
+
+run("cp", "-R", "bin", "$app_dest/bin");
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
