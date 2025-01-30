@@ -61,7 +61,6 @@ run("./configure", "--with-libmuscle=$app_dest/include");
 run("make", "LDADD=-L$app_dest/lib -lMUSCLE-3.7");
 run("make", "install");
 
-chdir("parsnp") or die;
 #
 # executables to go into app dest
 #
