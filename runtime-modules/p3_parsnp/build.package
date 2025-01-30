@@ -39,7 +39,7 @@ my $dir = "parsnp";
 -d $dest || mkdir $dest;
 
 my $app_dest = "$dest/parsnp-$vers";
-goto x;
+
 run("rm", "-rf", $app_dest);
 run("rm", "-rf", $dir);
 
@@ -60,7 +60,7 @@ run("./autogen.sh");
 run("./configure", "--with-libmuscle=$app_dest/include");
 run("make", "LDADD=-L$app_dest/lib -lMUSCLE-3.7");
 run("make", "install");
-x:
+
 chdir("parsnp") or die;
 #
 # executables to go into app dest
