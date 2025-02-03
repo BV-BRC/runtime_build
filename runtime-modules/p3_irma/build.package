@@ -3,11 +3,14 @@
 use strict;
 
 use Carp;
+use File::Copy;
 use File::Basename;
 use Cwd qw(getcwd abs_path);
 
 my $dest = $ENV{TARGET} || "/kb/runtime";
 my $parallel = 4;
+
+my $build_source = $ENV{BUILD_SOURCE} // "/build";
 
 if (@ARGV)
 {
@@ -33,9 +36,20 @@ my $app_dest = "$dest/irma-$vers";
 run("rm", "-rf", $dir, $app_dest);
 
 my $file = basename($url);
-run("curl", "-o", $file, "-L", $url);
+
+#
+# Vanished from CDC. Look in /build
+#
+if (-s "$build_source/$file")
+{
+    copy("$build_source/$file", $file) or die "Cannot copy $build_source/$file: $!";
+}
+else
+{
+    run("curl", "-o", $file, "-L", $url);
+}
 system("pwd; ls -l");
--f $file or die "Cannot find $file\n";
+-s $file or die "Cannot find $file\n";
 
 $file = abs_path($file);
 
