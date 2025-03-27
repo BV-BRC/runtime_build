@@ -27,12 +27,12 @@ if (! -s $package_zip)
     system("curl", "-o", $package_zip, "-k", "--retry", 10, "-L", $package_url);
 }
 
-#run("rm", "-rf", $app_dest);
-#mkdir($app_dest) or die "cannot mkdir $app_dest: $!";
-#
-#chdir($app_dest) or die "cannot chdir $app_dest: $!";
-#
-#run("unzip", "$here/$package_zip");
+run("rm", "-rf", $app_dest);
+mkdir($app_dest) or die "cannot mkdir $app_dest: $!";
+
+chdir($app_dest) or die "cannot chdir $app_dest: $!";
+
+run("unzip", "$here/$package_zip");
 
 
 #
