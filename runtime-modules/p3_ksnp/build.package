@@ -41,7 +41,11 @@ run("unzip", "$here/$package_zip");
 
 my $internal_path = "kSNP4.1 Linux package/kSNP4.1pkg";
 
-opendir(D, "$app_dest/$internal_path") or die "cann open $app_dest/$internal_path: $!";
+# Perms behaving oddly on maple with the pkg dir not being publicly 'x'able.
+
+chmod(0755, "$app_dest/$internal_path") or die "cannot chmod 0755 $app_dest/$internal_path: $!";
+
+opendir(D, "$app_dest/$internal_path") or die "cannot opendir $app_dest/$internal_path: $!";
 
 for my $exe (sort grep { -f "$app_dest/$internal_path/$_" } readdir(D))
 {
