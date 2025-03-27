@@ -1,0 +1,60 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use Cwd qw(getcwd abs_path);
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+
+my $here = getcwd;
+
+my $vers = "4.1";
+my $package_dir = "ksnp-${vers}";
+my $package_zip = "$package_dir.zip";
+my $package_url = "https://downloads.sourceforge.net/project/ksnp/kSNP4.1%20Linux%20package.zip?ts=gAAAAABn5W7psobG45sMP73sbbTerkpdVgFSjbYhpKUOrcbXawQyiPywtM2zqItRDuWi6DADdjU9IgQggUl65zF7o5S4aFN6mg%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fksnp%2Ffiles%2Flatest%2Fdownload";
+
+my $app_dest = "$dest/$package_dir";
+
+if (! -s $package_zip)
+{
+    system("curl", "-o", $package_zip, "-k", "--retry", 10, "-L", $package_url);
+}
+
+#run("rm", "-rf", $app_dest);
+#mkdir($app_dest) or die "cannot mkdir $app_dest: $!";
+#
+#chdir($app_dest) or die "cannot chdir $app_dest: $!";
+#
+#run("unzip", "$here/$package_zip");
+
+
+#
+# Create symlinks
+#
+
+my $internal_path = "kSNP4.1 Linux package/kSNP4.1pkg";
+
+opendir(D, "$app_dest/$internal_path") or die "cann open $app_dest/$internal_path: $!";
+
+for my $exe (sort grep { -f "$app_dest/$internal_path/$_" } readdir(D))
+{
+    my $dst = "$dest/bin/$exe";
+    my $src = "../$package_dir/$internal_path/$exe";
+    unlink($dst);
+    symlink($src, $dst) or die "Cannot symlink $src $dst: $!";
+}
+closedir(D);
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
