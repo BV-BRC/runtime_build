@@ -35,7 +35,7 @@ my $vers = "3.3.10";
 my $app_dest = "$dest/chewbbaca-$vers";
 run("rm", "-rf", $app_dest);
 
-run(". $dest/conda/bin/activate; conda create -y -p $app_dest -c conda-forge chewbbaca=$vers");
+run(". $dest/conda/bin/activate; conda create -y -p $app_dest -c bioconda -c conda-forge chewbbaca=$vers");
 
 for my $exe (qw(chewBBACA.py))
 {
