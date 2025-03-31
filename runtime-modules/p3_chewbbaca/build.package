@@ -37,6 +37,9 @@ run("rm", "-rf", $app_dest);
 
 run(". $dest/conda/bin/activate; conda create -y -p $app_dest -c bioconda -c conda-forge chewbbaca=$vers");
 
+# conda installs a plotly that is too new and incompatible
+run("$app_dest/bin/pip install plotly==5.8.0");
+
 for my $exe (qw(chewBBACA.py))
 {
     my $src = "$app_dest/bin/$exe";
