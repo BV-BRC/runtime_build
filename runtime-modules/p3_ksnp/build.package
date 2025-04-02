@@ -24,7 +24,18 @@ my $app_dest = "$dest/$package_dir";
 
 if (! -s $package_zip)
 {
-    system("curl", "-o", $package_zip, "-k", "--retry", 10, "-L", $package_url);
+    #
+    # For container build we may have cached a copy in /build since downloads from SF are flaky
+    #
+    if (-s "/build/$package_zip")
+    {
+	print "Using cached $package_zip\n";
+	run("cp", "/build/$package_zip", $package_zip);
+    }
+    else
+    {
+	system("curl", "-o", $package_zip, "-k", "--retry", 10, "-L", $package_url);
+    }
 }
 
 run("rm", "-rf", $app_dest);
@@ -45,12 +56,17 @@ my $internal_path = "kSNP4.1 Linux package/kSNP4.1pkg";
 
 chmod(0755, "$app_dest/$internal_path") or die "cannot chmod 0755 $app_dest/$internal_path: $!";
 
+
 opendir(D, "$app_dest/$internal_path") or die "cannot opendir $app_dest/$internal_path: $!";
 
 for my $exe (sort grep { -f "$app_dest/$internal_path/$_" } readdir(D))
 {
     my $dst = "$dest/bin/$exe";
     my $src = "../$package_dir/$internal_path/$exe";
+    #
+    # Perms were also wrong on the distributed bin dir
+    #
+    chmod(0755, $src);
     unlink($dst);
     symlink($src, $dst) or die "Cannot symlink $src $dst: $!";
 }
