@@ -1,0 +1,71 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use File::Path qw(make_path);
+use Cwd 'abs_path';
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+my $parallel = 8;
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+my $runtime = $dest;
+if (@ARGV)
+{
+    $runtime = shift;
+}
+
+my $p3 = "/disks/patric-common/runtime";
+if (! -d $p3)
+{
+    $p3 = $dest;
+    if (! -d $p3)
+    {
+	die "Can't find $p3\n";
+    }
+}
+my $url = "https://github.com/ctSkennerton/minced";
+
+my $dir = "minced";
+
+-d $dest || mkdir $dest;
+
+my $vers = "0.4.2";
+
+my $app_dest = "$dest/$dir-$vers";
+
+run("rm", "-rf", $app_dest);
+
+run("git", "clone", $url, $app_dest);
+
+chdir $app_dest or die "cannot chdir $app_dest: $!";
+run("git", "checkout", $vers);
+run("make");
+
+for my $prog (qw(minced))
+{
+    unlink("$dest/bin/$prog");
+    open(WRAP, ">", "$dest/bin/$prog") or die "Cannot write $dest/bin/$prog: $!";
+    print WRAP <<END;
+#!/bin/bash
+
+export PATH=$app_dest:$dest/bin:\$PATH
+
+$app_dest/$prog "\$@"
+END
+    chmod(0755, \*WRAP);
+    close(WRAP);
+}
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
