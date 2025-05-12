@@ -31,7 +31,8 @@ if (! -d $p3)
     }
 }
 
-my $vers = "15-6f452";
+my $vers = "17-b804f";
+(my $shortvers = $vers) =~ s/-.*$//;
 
 my $build_tools = $ENV{BUILD_TOOLS} //  "$p3/build-tools";
 $ENV{PATH} = "$build_tools/bin:$p3/bin:$ENV{PATH}";
@@ -49,7 +50,7 @@ run("git", "checkout", "$vers");
 mkdir("build");
 chdir("build");
 
-run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "..");
+run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "-DVERSION_OVERRIDE=$shortvers", "..");
 
 run("make", "-j12");
 
