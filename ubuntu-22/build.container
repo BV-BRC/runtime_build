@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [[ $# -ne 1 ]]; then
+	echo "Usage: $0 buildnumber" 1>&2
+	exit 1
+fi
+
+build=$1
+base=11
+base_sub=3
+
+
+src=build-prod-image.$build.def
+dst=ubuntu-$build-$base.sif
+
+echo "Building $dst from $src"
+time sudo -u p3 \
+    singularity build \
+    	--build-arg base=/disks/tmp/olson/build/build$base-$base_sub.sif  \
+	/vol/patric3/production/containers/$dst \
+	/home/olson/sing/deployment/production-distributions/distribs/bvbrc-ubuntu-image/$src
+

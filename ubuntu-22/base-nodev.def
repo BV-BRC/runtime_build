@@ -1,0 +1,45 @@
+Bootstrap: library
+From: ubuntu:jammy
+
+%post
+
+mkdir -p /disks /vol /home /homes
+
+export DEBIAN_FRONTEND=noninteractive
+
+apt-get -y update
+
+apt-get -y install apt-utils aria2 conf automake awscli cmake csh curl daemonize elph git \
+	kmc libboost-all-dev libbz2-dev libdb-dev libffi-dev libkmc-dev liblog4cxx-dev \
+	liblzma-dev libmysqlclient-dev libncurses5-dev libpng-dev libreadline-dev \
+	libsqlite3-dev libtbb-dev libxrender1 locales locales-all lsof lzma-dev \
+	maven nodejs openbabel parallel prodigal progressivemauve psmisc \
+	python2 python3 rsync strace tigr-glimmer trnascan-se unzip valgrind vim wget \
+	zlib1g-dev libxml2-dev libgd-dev libparallel-iterator-perl \
+	libgetopt-long-descriptive-perl
+
+#
+# ngs tools
+#
+apt-get -y install bedtools hisat2 bwa libeigen3-dev bowtie2 canu sra-toolkit \
+	diamond-aligner minimap2 unicycler bandage pilon racon hmmer2 hmmer mafft circos \
+	figtree mcl raxml phyml capnproto mash muscle exonerate nanopolish  stringtie \
+	ivar fastq-pair bedops bbmap \
+	glimpse ant libhdf5-dev liblzma-dev uuid-dev \
+	libfreetype-dev libpcre3-dev libpcre2-dev libtiff-dev libharfbuzz-dev libfribidi-dev libproj-dev \
+	megahit primer3  libbamtools-dev bison flex nodejs npm libglpk-dev  lsb-release cufflinks redis
+
+systemctl disable redis
+
+#
+# Hack until p3-sra fixed
+#
+#apt-get -y install python-pip
+#pip2 install lxml requests
+
+mkdir /envs
+mkdir /build
+
+installer=Anaconda3-2023.09-0-Linux-x86_64.sh
+curl -O https://repo.anaconda.com/archive/$installer
+bash $installer -b -p /envs/conda
