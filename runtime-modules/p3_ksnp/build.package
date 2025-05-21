@@ -38,13 +38,21 @@ if (! -s $package_zip)
     }
 }
 
+
+#
+# We also need kSNPdist from its separate installer
+#
+my $kSNPdist_url = 'https://downloads.sourceforge.net/project/ksnp/kSNPdist.zip?ts=gAAAAABoLjFcnI3KAus29vsnoLzLNUX3KE2ajxHYotj-dqJHI-_RYOs3Nn-Gf_nKu60ganrvEZ4GgdX_cGIbItlZ0Lc3fGsugw%3D%3D&r=https%3A%2F%2Fsourceforge.net%2Fprojects%2Fksnp%2Ffiles%2FkSNPdist.zip%2Fdownload';
+my $kSNPdist_zip = "ksnpdist.zip";
+run("curl", "-k", "--retry", 10, "-L", "-o", $kSNPdist_zip, $kSNPdist_url);
+
 run("rm", "-rf", $app_dest);
 mkdir($app_dest) or die "cannot mkdir $app_dest: $!";
 
 chdir($app_dest) or die "cannot chdir $app_dest: $!";
 
 run("unzip", "$here/$package_zip");
-
+run("unzip", "$here/$kSNPdist_zip");
 
 #
 # Create symlinks
@@ -59,7 +67,7 @@ chmod(0755, "$app_dest/$internal_path") or die "cannot chmod 0755 $app_dest/$int
 
 opendir(D, "$app_dest/$internal_path") or die "cannot opendir $app_dest/$internal_path: $!";
 
-for my $exe (sort grep { -f "$app_dest/$internal_path/$_" } readdir(D))
+for my $exe (sort grep { !/^\./ } grep { -f "$app_dest/$internal_path/$_" } readdir(D))
 {
     my $dst = "$dest/bin/$exe";
     my $src = "../$package_dir/$internal_path/$exe";
@@ -71,6 +79,11 @@ for my $exe (sort grep { -f "$app_dest/$internal_path/$_" } readdir(D))
     symlink($src, $dst) or die "Cannot symlink $src $dst: $!";
 }
 closedir(D);
+
+#
+# Symlink for kSNPdist
+#
+symlink("../$package_dir/kSNPdist/Linux/kSNPdist", "$dest/bin/kSNPdist");
 
 sub run
 {
