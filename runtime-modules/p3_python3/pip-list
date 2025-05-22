@@ -1,3 +1,4 @@
+pyvcf
 cython
 scikit-learn
 keras
@@ -24,7 +25,6 @@ openpyxl
 plotly
 umap-learn
 tqdm
-pyvcf
 requests
 lxml
 redis
