@@ -40,12 +40,15 @@ my $file = basename($url);
 #
 # Vanished from CDC. Look in /build
 #
+print "Checking $build_source/$file\n";
 if (-s "$build_source/$file")
 {
+    print "Using $build_source/$file\n";
     copy("$build_source/$file", $file) or die "Cannot copy $build_source/$file: $!";
 }
 else
 {
+    print "Pulling from web\n";
     run("curl", "-o", $file, "-L", $url);
 }
 system("pwd; ls -l");
