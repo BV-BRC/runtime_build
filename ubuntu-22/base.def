@@ -3,7 +3,7 @@ From: ubuntu:jammy
 
 %post
 
-mkdir -p /disks /vol /home /homes
+mkdir -p /disks /vol /home /homes /nfs
 
 export DEBIAN_FRONTEND=noninteractive
 
@@ -28,7 +28,13 @@ apt-get -y install bedtools hisat2 bwa libeigen3-dev bowtie2 canu sra-toolkit \
 	ivar fastq-pair bedops bbmap \
 	glimpse ant libhdf5-dev liblzma-dev uuid-dev \
 	libfreetype-dev libpcre3-dev libpcre2-dev libtiff-dev libharfbuzz-dev libfribidi-dev libproj-dev \
-	megahit primer3  libbamtools-dev bison flex nodejs npm libglpk-dev  lsb-release cufflinks redis
+	megahit primer3  libbamtools-dev bison flex nodejs npm libglpk-dev  lsb-release redis
+
+curl -L -O https://www.cs.uky.edu/~acta225/CS485/repo/dists/jammy/non-free/binary-amd64/science/cufflinks_2.2.1+dfsg.1-10~ngs+1_amd64.deb
+apt-get install -y ./cufflinks_2.2.1+dfsg.1-10~ngs+1_amd64.deb
+
+# java
+apt-get -y install openjdk-11-jdk
 
 systemctl disable redis
 

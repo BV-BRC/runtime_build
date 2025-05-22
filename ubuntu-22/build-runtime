@@ -23,6 +23,7 @@ fi
 if [[ ! -f $build1_image ]] ; then
     singularity build --build-arg base=$base_image --fakeroot $build1_image finish-1.def > $build1_log 2>&1
 fi
+exit
 if [[ ! -f $build2_image ]] ; then
     singularity build --build-arg base=$build1_image --fakeroot $build2_image finish-2.def > $build2_log 2>&1
 fi
