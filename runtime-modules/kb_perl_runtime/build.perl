@@ -46,7 +46,7 @@ run("rm", "-rf", $perl_vers);
 
 if (! -d $perl_vers)
 {
-    run("tar", "--no-same-owner", "-x", "-z, "-f", $perl_tgz);
+    run("tar", "--no-same-owner", "-x", "-z", "-f", $perl_tgz);
 }
 
 chdir $perl_vers;
