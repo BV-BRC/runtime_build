@@ -72,7 +72,7 @@ if (! -f $python_tgz)
 
 if (! -d $python_vers)
 {
-    run("tar", "xzf", $python_tgz);
+    run("tar", "--no-same-owner", "-x", "-z", "-f", $python_tgz);
 }
 
 
