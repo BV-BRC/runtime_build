@@ -99,6 +99,7 @@ run("make install > $here/install.out 2>&1");
 chdir "..";
 # Hack for pyvcf install
 run("$dest/bin/pip3", "install", 'setuptools<58');
+run("$dest/bin/pip3", "install", "pyvcf");
 run("$dest/bin/pip3", "install", @pips);
 
 sub run
