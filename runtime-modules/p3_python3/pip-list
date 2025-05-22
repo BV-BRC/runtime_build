@@ -31,3 +31,12 @@ redis
 epiweeks
 cvxpy
 cvxpy-base
+xlsxwriter
+phanotate
+dnappler
+pharokka
+pycirclize
+git+https://github.com/arpcard/rgi.git
+pyspoa
+pulp<2.8
+snakemake
