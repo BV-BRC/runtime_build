@@ -16,19 +16,24 @@ if (@ARGV)
 
 -d $dest || mkdir $dest;
 
-my $vers = "7.475";
+my $vers = "7.526";
+#my $vers = "7.475";
 my $tar = "mafft-$vers-with-extensions-src.tgz";
 my $url = "http://mafft.cbrc.jp/alignment/software/$tar";
 my $dir = "mafft-$vers-with-extensions";
 
 if (! -s $tar)
 {
-    run("curl", "-o", $tar, "-L", $url);
+#    run("curl", "-o", $tar, "-L", $url);
 }
 
 
+my $dir = "mafft";
 run("rm -rf $dir");
-run("tar xzfp $tar");
+#run("tar xzfp $tar");
+
+run("git", "clone", "-b", "v$vers", "--depth", "1", "https://gitlab.com/sysimm/mafft");
+
 chdir $dir or die "cannot chdir $dir: $!";
 
 chdir "core" or die "cannot chdir core: $!";
