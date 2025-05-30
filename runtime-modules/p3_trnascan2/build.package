@@ -8,7 +8,7 @@ use File::Path 'make_path';
 use Cwd 'abs_path';
 
 my $dest = $ENV{TARGET} || "/kb/runtime";
-my $parallel = 4;
+my $parallel = 1;
 
 if (@ARGV)
 {
