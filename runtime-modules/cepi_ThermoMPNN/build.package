@@ -1,0 +1,75 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use Cwd qw(getcwd abs_path);
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+my $parallel = 4;
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+my $runtime = $dest;
+if (@ARGV)
+{
+    $runtime = shift;
+}
+
+my $p3 = "/disks/patric-common/runtime";
+if (! -d $p3)
+{
+    $p3 = $dest;
+    if (! -d $p3)
+    {
+	die "Cannot find $p3\n";
+    }
+}
+
+my $perform_patch;
+my $build_tools = "$p3/build-tools";
+
+my $dir = "ThermoMPNN-D";
+
+my $app_dest = "$dest/$dir/github";
+my $app_conda = "$dest/$dir/conda";
+my $vers = "78e1939";
+
+goto x;
+
+system("rm", "-rf", $app_dest);
+system("rm", "-rf", $dir);
+
+run("git", "clone", "https://github.com/Tinyman392/ThermoMPNN-D", $app_dest);
+chdir $app_dest or die "Cannot chdir $app_dest: $!";
+run("git", "checkout", $vers);
+
+run(". $dest/conda/bin/activate; conda env update -p $app_conda -f ./environment.yaml");
+x:
+#
+# Create wrapper script in $dest/bin that sets up paths properly
+#
+# Note that if we wrap a GPU version we would use the other executable (v2_ssm.py)
+#
+
+open(F, ">", "$dest/bin/$dir") or die "cannot write $dest/bin/$dir: $!";
+print F <<END;
+#!/bin/bash
+ 
+export PATH="$app_dest:$app_conda/bin:\$PATH"
+
+v2_ssm_cpu.py "\$\@"
+END
+
+chmod(0755, \*F)  or die "Cannot chmod $dest/bin/$dir: $!";
+close(F);
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
