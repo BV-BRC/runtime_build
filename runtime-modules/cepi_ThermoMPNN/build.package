@@ -39,8 +39,6 @@ my $app_dest = "$dest/$dir/github";
 my $app_conda = "$dest/$dir/conda";
 my $vers = "78e1939";
 
-goto x;
-
 system("rm", "-rf", $app_dest);
 system("rm", "-rf", $dir);
 
@@ -49,7 +47,7 @@ chdir $app_dest or die "Cannot chdir $app_dest: $!";
 run("git", "checkout", $vers);
 
 run(". $dest/conda/bin/activate; conda env update -p $app_conda -f ./environment.yaml");
-x:
+
 #
 # Create wrapper script in $dest/bin that sets up paths properly
 #
