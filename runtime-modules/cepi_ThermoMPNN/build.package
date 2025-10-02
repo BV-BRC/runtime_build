@@ -46,7 +46,7 @@ run("git", "clone", "https://github.com/Tinyman392/ThermoMPNN-D", $app_dest);
 chdir $app_dest or die "Cannot chdir $app_dest: $!";
 run("git", "checkout", $vers);
 
-run(". $dest/conda/bin/activate; conda env update -p $app_conda -f ./environment.yaml; conda install mkl=2023.2.0");
+run(". $dest/conda/bin/activate; conda env update -p $app_conda -f ./environment.yaml; conda install -c conda-forge -p $app_conda mkl=2023.2.0");
 
 #
 # Create wrapper script in $dest/bin that sets up paths properly
