@@ -53,8 +53,8 @@ chdir("build");
 #
 # We have systems without the AVX2 instruction set available
 #
-my $avx2 = "-DHAVE_AVX2=0";
-run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "-DVERSION_OVERRIDE=$shortvers", $avx2, "..");
+my @avx2 = qw(-DNATIVE_ARCH=0 -DHAVE_SSE4_1=1 -DHAVE_AVX2=0 -DHAVE_SSE2=1 -DCMAKE_C_FLAGS=-march=sandybridge);
+run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "-DVERSION_OVERRIDE=$shortvers", @avx2, "..");
 
 run("make", "-j12");
 
