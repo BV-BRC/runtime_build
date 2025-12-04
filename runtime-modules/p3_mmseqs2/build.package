@@ -50,7 +50,11 @@ run("git", "checkout", "$vers");
 mkdir("build");
 chdir("build");
 
-run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "-DVERSION_OVERRIDE=$shortvers", "..");
+#
+# We have systems without the AVX2 instruction set available
+#
+my $avx2 = "-DHAVE_AVX2=0";
+run("cmake", "-DCMAKE_BUILD_TYPE=RELEASE", "-DCMAKE_INSTALL_PREFIX=$dest", "-DVERSION_OVERRIDE=$shortvers", $avx2, "..");
 
 run("make", "-j12");
 
