@@ -42,6 +42,8 @@ run("git", "checkout", $commit);
 my $brief = `git log -n 1 --pretty='tformat:%h'`;
 chomp $brief;
 my $app_dest = "$dest/forester-$brief";
+unlink("$dest/forester");
+symlink($app_dest, "$dest/forester");
 run("rm", "-rf", $app_dest);
 make_path("$app_dest/bin", "$app_dest/lib");
 
