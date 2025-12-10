@@ -21,7 +21,9 @@ if (@ARGV)
 $ENV{PATH} = "$dest/bin:$ENV{PATH}";
 
 my $repo = "https://github.com/BV-BRC-dependencies/forester.git";
-my $commit = "2e113e89fd9f7b38d21c0f44d4ea76ab468ac832"; 
+
+my $commit = "4e3d71b46e1b5e78baa4353f1fbda741e860ec8f"; # 12/10/2025, adds cladinator3
+#my $commit = "2e113e89fd9f7b38d21c0f44d4ea76ab468ac832";  # from 2022, with cladinator
 #my $commit = "e8fff18c909a62471bb537629619d621121ac99f"; 
 #my $commit = "b0cf72076d3e4ee76ba1625ab533ecb6ed5a00a8"; 
 # commit 0c25a6508818ebae41aa892f3e392835108e922f
@@ -49,7 +51,7 @@ run("ant");
 
 run('cp', 'forester.jar', "$app_dest/lib/forester.jar");
 
-
+make_wrapper("cladinator3");
 make_wrapper("cladinator");
 make_wrapper("decorator");
 
