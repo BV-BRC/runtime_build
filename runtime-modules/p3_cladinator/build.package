@@ -22,7 +22,8 @@ $ENV{PATH} = "$dest/bin:$ENV{PATH}";
 
 my $repo = "https://github.com/BV-BRC-dependencies/forester.git";
 
-my $commit = "4e3d71b46e1b5e78baa4353f1fbda741e860ec8f"; # 12/10/2025, adds cladinator3
+my $commit = "051005b7ecfa5b32c71b67eef82d0b34238c32a2"; # 12/11/2025 add encoding fix
+#my $commit = "4e3d71b46e1b5e78baa4353f1fbda741e860ec8f"; # 12/10/2025, adds cladinator3
 #my $commit = "2e113e89fd9f7b38d21c0f44d4ea76ab468ac832";  # from 2022, with cladinator
 #my $commit = "e8fff18c909a62471bb537629619d621121ac99f"; 
 #my $commit = "b0cf72076d3e4ee76ba1625ab533ecb6ed5a00a8"; 
