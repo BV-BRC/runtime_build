@@ -1,0 +1,7 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%setup
+mkdir -p ${APPTAINER_ROOTFS}/opt
+tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 

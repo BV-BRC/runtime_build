@@ -1,0 +1,13 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%files
+
+{{packages}} /opt/package-list.txt
+
+%post
+
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+	$(cat /opt/package-list.txt)

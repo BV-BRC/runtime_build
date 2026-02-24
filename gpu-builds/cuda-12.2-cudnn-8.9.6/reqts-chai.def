@@ -1,0 +1,46 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%post -c /bin/bash
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+    
+    conda_dir=/opt/conda-chai
+
+    conda create -p $conda_dir --yes --quiet  python=3.10 
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    pip install torch>=2.3.1 --index-url https://download.pytorch.org/whl/cu121
+    pip install chai-lab
+
+    #
+    # Models are too large for the container. We separately
+    # load into /local_databases which is made available via bind to the container.
+    #
+    # export DISABLE_PANDERA_IMPORT_WARNING=True
+    # export HF_HOME=/opt/conda-chai/cache
+    # mkdir -p $HF_HOME
+
+    # export CHAI_DOWNLOADS_DIR=/opt/conda-chai/downloads
+    # mkdir -p $CHAI_DOWNLOADS_DIR
+
+    # BASE_URL="https://chaiassets.com/chai1-inference-depencencies"
+
+    # curl -o preload_chai_cache.sh https://raw.githubusercontent.com/olsonanl/ChaiApp/refs/heads/main/container/preload_chai_cache.sh
+    # chmod +x preload_chai_cache.sh
+    # ./preload_chai_cache.sh $CHAI_DOWNLOADS_DIR
+
+%environment
+
+if [[ -d /local_databases/chai ]] ; then
+    export CHAI_DOWNLOADS_DIR=/local_databases/chai
+fi
+export DISABLE_PANDERA_IMPORT_WARNING=True
+
+%runscript
+
+%labels

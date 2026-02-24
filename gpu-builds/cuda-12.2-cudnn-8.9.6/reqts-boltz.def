@@ -1,0 +1,46 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%post -c /bin/bash
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+    
+    conda_dir=/opt/conda-boltz
+
+    conda create -p $conda_dir --yes --quiet  python=3.11
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install PyTorch with CUDA
+
+    pip install torch>=2.2 --index-url https://download.pytorch.org/whl/cu121
+
+    # Install Boltz
+    pip install boltz[cuda]
+
+    #
+    # Models are too large for the container. We separately
+    # load into /local_databases which is made available via bind to the container.
+    #
+    # export BOLTZ_CACHE=/opt/conda-boltz/cache
+    # export HF_HOME=$BOLTZ_CACHE
+    # export XDG_CACHE_HOME=$BOLTZ_CACHE
+    # export NUMBA_CACHE_DIR=$BOLTZ_CACHE/numba
+    
+    # mkdir -p $BOLTZ_CACHE $HF_HOME $XDG_CACHE_HOME $NUMBA_CACHE_DIR
+    # curl -o preload_boltz_cache.sh https://github.com/olsonanl/boltzApp/raw/refs/heads/main/container/preload_boltz_cache.sh
+    # chmod +x preload_boltz_cache.sh
+    # ./preload_boltz_cache.sh $BOLTZ_CACHE
+
+%environment
+
+if [[ -d /local_databases/boltz ]] ; then
+    export BOLTZ_CACHE=/local_databases/boltz
+fi
+
+%runscript
+
+%labels

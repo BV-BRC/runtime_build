@@ -1,0 +1,401 @@
+Bootstrap: docker
+From: nvidia/cuda:12.2.0-devel-ubuntu22.04
+
+%labels
+    Author DeepMind Technologies Limited / Apptainer Build
+    Version alphafold-2.3.2-ubuntu22.04-cudnn8.9.6
+    CUDA-Version 12.2.2
+    CUDNN-Version 8.9.6
+    JAX-Version 0.4.26
+    Python-Version 3.11
+    Description AlphaFold protein structure prediction system with CUDNN 8.9.6
+
+%files
+{{packages}} /opt/package-list.txt
+
+%environment
+    # Set environment variables for CUDA, cuDNN, and Miniforge
+    # export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    # Core paths
+    # LD_LIBRAY_PATH needs /.singularity.d/libs to get the host libraries
+    # It has to come before /usr/lib/x86_64-linux-gnu
+    #    export LD_LIBRARY_PATH="/opt/miniforge/lib:/usr/local/cuda-12.2/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+    # Conda settings
+    # CUDA/JAX settings for optimal performance
+    # Working directory
+if [[ -d /local_databases/chai ]] ; then
+fi
+if [[ -d /local_databases/boltz ]] ; then
+fi
+    export PATH="/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
+    export CUDNN_VERSION=8.9.6
+    export PYTHONPATH="/app/alphafold:$PYTHONPATH"
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+    export PYTHONNOUSERSITE=1
+    export CUDA_HOME="/usr/local/cuda-12.2"
+    export CUDNN_PATH="/usr/lib/x86_64-linux-gnu"
+    export XLA_FLAGS="--xla_gpu_cuda_data_dir=/usr/local/cuda-12.2 --xla_gpu_force_compilation_parallelism=1"
+    export XLA_PYTHON_CLIENT_PREALLOCATE=false
+    export XLA_PYTHON_CLIENT_MEM_FRACTION=0.90
+    export TF_FORCE_GPU_ALLOW_GROWTH=true
+    export CUDA_MODULE_LOADING=EAGER
+    export WORKDIR="/app/alphafold"
+    export CHAI_DOWNLOADS_DIR=/local_databases/chai
+export DISABLE_PANDERA_IMPORT_WARNING=True
+    export BOLTZ_CACHE=/local_databases/boltz
+
+%setup
+
+# === Setup from: add-runtime.def ===
+mkdir -p ${APPTAINER_ROOTFS}/opt
+tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 
+
+
+%post -c /bin/bash
+
+# === Stage from: base-build.def ===
+
+set -e
+set -o pipefail
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update the package list and install necessary dependencies
+    apt-get update && apt-get install -y --no-install-recommends \
+        wget \
+	curl \
+        gnupg2 \
+        ca-certificates \
+        build-essential \
+        software-properties-common \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        cmake \
+        git \
+        hmmer \
+        kalign \
+        tzdata \
+        wget less strace vim-tiny  \
+	gdb \
+	locales 
+#	$(cat /opt/package-list.txt)
+
+
+    locale-gen en_US.UTF-8
+
+    # Add NVIDIA's official CUDA repository
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
+    dpkg -i cuda-keyring_1.0-1_all.deb
+    apt-get update
+
+#
+#  To force vers 535 of drivers
+#
+if false ; then
+apt-get remove -y nvidia-driver-* libnvidia-compute-* 
+
+apt-get install -y --allow-change-held-packages \
+    nvidia-driver-535 cuda-cudart-12-2 libcublas-12-2 libcublas-dev-12-2 
+
+else
+
+    # Install CUDA 12.2 and explicitly allow changes to held packages
+#    apt-get -y --allow-change-held-packages install cuda-12-2 libcublas-12-2 libcublas-dev-12-2
+  apt-get -y --allow-change-held-packages install \
+          cuda-toolkit-12-2 \
+	  libcublas-12-2 \
+	  libcublas-dev-12-2
+  
+fi
+
+    # Install cuDNN 8.9.6 directly from the NVIDIA repository
+    apt-get -y install libcudnn8=8.9.6.* libcudnn8-dev=8.9.6.* libcudnn8-samples=8.9.6.*
+
+    # Fix CUDNN symlinks for JAX compatibility
+    cd /usr/lib/x86_64-linux-gnu/
+    for lib in libcudnn libcudnn_adv_infer libcudnn_adv_train libcudnn_cnn_infer libcudnn_cnn_train \
+    	    libcudnn_ops_infer libcudnn_ops_train; do
+        if [ -f "${lib}.so.8.9.6" ]; then
+            ln -sf "${lib}.so.8.9.6" "${lib}.so.8"
+            ln -sf "${lib}.so.8.9.6" "${lib}.so"
+        fi
+    done
+
+    # Install Miniforge (instead of Miniconda)
+    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O Miniforge3.sh
+    bash Miniforge3.sh -b -p /opt/miniforge
+    rm Miniforge3.sh
+    /opt/miniforge/bin/conda init bash
+
+    # Clean up
+    apt-get clean
+    rm -rf /var/lib/apt/lists/* \
+           cuda-keyring_1.0-1_all.deb
+
+
+# === Stage from: reqts-alphafold.def ===
+
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+    
+    apt-get update
+
+    # Compile HHsuite from source
+    git clone --branch v3.3.0 --single-branch https://github.com/soedinglab/hh-suite.git hh-suite \
+    && mkdir hh-suite/build \
+    && cd hh-suite/build \
+    && cmake -DCMAKE_INSTALL_PREFIX=/opt/hhsuite .. \
+    && make -j$(nproc) \
+    && make install \
+    && ln -s /opt/hhsuite/bin/* /usr/bin 
+
+    conda_dir=/opt/conda-alphafold
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+
+    conda config --system --set remote_read_timeout_secs 600
+    conda config --system --set remote_connect_timeout_secs 60
+
+
+    # Install Conda packages with auto-accept ToS
+    conda create -p $conda_dir  --yes conda==24.11.1 pip python=3.11
+    #    conda config -p $conda_dir --prepend channels nvidia
+    #conda install -p $conda_dir libcusolver=11.6.1.9 cuda=12.2.2 openmm=8.0.0 pdbfixer
+    conda install -p $conda_dir --channel nvidia cuda=12.2.2 
+    conda install -p $conda_dir --channel conda-forge openmm=8.0.0 pdbfixer
+    #
+    # Fix crashes resulting in openmm import when there are CUDA version clashes
+    rm -f $conda_dir/lib/plugins/libOpenMM*CUDA* $conda_dir/lib/plugins/libOpenMM*OpenCL*
+    
+    # conda install -p $conda_dir openmm=8.0.0 pdbfixer
+    conda clean --all --force-pkgs-dirs --yes
+
+    conda activate $conda_dir
+    # Create app directory
+    mkdir -p /app
+    cd /app
+    git clone https://github.com/wilke/alphafold
+    
+#    conda clean --all --force-pkgs-dirs --yes
+
+    # Download stereo_chemical_props.txt
+    wget -q -P /app/alphafold/alphafold/common/ \
+        https://git.scicore.unibas.ch/schwede/openstructure/-/raw/7102c63615b64735c4941278d92b554ec94415f8/modules/mol/alg/src/stereo_chemical_props.txt
+    
+    # Create run script with proper GPU initialization
+    cat > /app/run_alphafold.sh << 'EOF'
+#!/bin/bash
+# Update library cache for GPU visibility
+ldconfig 2>/dev/null || true
+# Run AlphaFold with all arguments
+exec python /app/alphafold/run_alphafold.py "$@"
+EOF
+    chmod +x /app/run_alphafold.sh
+    
+    # Create test script for validation
+    cat > /app/test_alphafold.py << 'EOF'
+#!/opt/conda-alphafold/bin/python3
+import sys
+import os
+print("Testing AlphaFold dependencies...")
+
+# Suppress TF warnings during test
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+try:
+    import numpy as np
+    print(f"✓ NumPy {np.__version__}")
+    
+    import jax
+    print(f"✓ JAX {jax.__version__}")
+    devices = jax.devices()
+    print(f"  Devices: {devices}")
+    if any('cuda' in str(d).lower() for d in devices):
+        print("  ✓ GPU detected")
+    else:
+        print("  ⚠ No GPU detected - AlphaFold will run on CPU (slow)")
+    
+    import tensorflow as tf
+    print(f"✓ TensorFlow {tf.__version__}")
+    
+    import alphafold
+    print("✓ AlphaFold module imported successfully")
+    
+    # Test OpenMM
+    import openmm
+    print(f"✓ OpenMM {openmm.__version__}")
+    
+    # Test CUDNN availability
+    try:
+        from tensorflow.python.platform import build_info
+        if hasattr(build_info, 'cudnn_version_number'):
+            print(f"✓ CUDNN {build_info.cudnn_version_number}")
+        else:
+            print("✓ CUDNN available")
+    except:
+        print("⚠ Could not verify CUDNN version")
+    
+    print("\nAll dependencies loaded successfully!")
+    sys.exit(0)
+    
+except Exception as e:
+    print(f"✗ Error: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+EOF
+    chmod +x /app/test_alphafold.py
+    
+    # Run ldconfig during build to create library cache
+    ldconfig
+
+    # Second %post section - runs AFTER files are copied
+    # This is necessary because we need requirements.txt from the copied files
+    # Install pip packages after files are copied
+    export PYTHONNOUSERSITE=1
+    
+    # Upgrade pip first
+    pip install --upgrade pip --no-cache-dir
+    
+    # Install requirements
+    pip install -r /app/alphafold/requirements.txt --no-cache-dir
+    
+    # Install JAX with CUDA 12.2 support (matching Dockerfile)
+    pip install --upgrade --no-cache-dir \
+        jax==0.4.26 \
+        jaxlib==0.4.26+cuda12.cudnn89 \
+        -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+    
+    # Clean up to reduce image size
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+    apt-get autoremove --yes
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+    
+    # Final ldconfig to ensure all libraries are found
+    ldconfig
+
+
+# === Stage from: reqts-chai.def ===
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+    
+    conda_dir=/opt/conda-chai
+
+    conda create -p $conda_dir --yes --quiet  python=3.10 
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    pip install torch>=2.3.1 --index-url https://download.pytorch.org/whl/cu121
+    pip install chai-lab
+
+    #
+    # Models are too large for the container. We separately
+    # load into /local_databases which is made available via bind to the container.
+    #
+    # export DISABLE_PANDERA_IMPORT_WARNING=True
+    # export HF_HOME=/opt/conda-chai/cache
+    # mkdir -p $HF_HOME
+
+    # export CHAI_DOWNLOADS_DIR=/opt/conda-chai/downloads
+    # mkdir -p $CHAI_DOWNLOADS_DIR
+
+    # BASE_URL="https://chaiassets.com/chai1-inference-depencencies"
+
+    # curl -o preload_chai_cache.sh https://raw.githubusercontent.com/olsonanl/ChaiApp/refs/heads/main/container/preload_chai_cache.sh
+    # chmod +x preload_chai_cache.sh
+    # ./preload_chai_cache.sh $CHAI_DOWNLOADS_DIR
+
+
+# === Stage from: reqts-boltz.def ===
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+    
+    conda_dir=/opt/conda-boltz
+
+    conda create -p $conda_dir --yes --quiet  python=3.11
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install PyTorch with CUDA
+
+    pip install torch>=2.2 --index-url https://download.pytorch.org/whl/cu121
+
+    # Install Boltz
+    pip install boltz[cuda]
+
+    #
+    # Models are too large for the container. We separately
+    # load into /local_databases which is made available via bind to the container.
+    #
+    # export BOLTZ_CACHE=/opt/conda-boltz/cache
+    # export HF_HOME=$BOLTZ_CACHE
+    # export XDG_CACHE_HOME=$BOLTZ_CACHE
+    # export NUMBA_CACHE_DIR=$BOLTZ_CACHE/numba
+    
+    # mkdir -p $BOLTZ_CACHE $HF_HOME $XDG_CACHE_HOME $NUMBA_CACHE_DIR
+    # curl -o preload_boltz_cache.sh https://github.com/olsonanl/boltzApp/raw/refs/heads/main/container/preload_boltz_cache.sh
+    # chmod +x preload_boltz_cache.sh
+    # ./preload_boltz_cache.sh $BOLTZ_CACHE
+
+
+# === Stage from: add-packages.def ===
+
+    apt-get update -y
+    apt-get install -y --no-install-recommends \
+	$(cat /opt/package-list.txt)
+
+
+%runscript
+# WARNING: Multiple runscripts merged
+# --- From: base-build.def ---
+    # Default command to run when the container is executed
+    echo "This container includes CUDA 12.2, cuDNN 8.9.6, and Miniforge."
+    exec "$@"
+
+# --- From: reqts-alphafold.def ---
+    cd /app/alphafold
+    exec /app/run_alphafold.sh "$@"
+
+
+%help
+
+=== From: reqts-alphafold.def ===
+    AlphaFold v2.3.2 - Protein structure prediction system
+    
+    This version uses CUDNN 8.9.6 for Ubuntu 22.04 compatibility.
+    
+    Basic usage:
+    apptainer run --nv alphafold_ubuntu22_cudnn896.sif \
+      --fasta_paths=<path_to_fasta> \
+      --max_template_date=2022-01-01 \
+      --db_preset=<reduced_dbs|full_dbs> \
+      --model_preset=<monomer|monomer_casp14|monomer_ptm|multimer> \
+      --data_dir=<path_to_databases> \
+      --output_dir=<output_path>
+    
+    To test installation:
+    apptainer exec --nv alphafold_ubuntu22_cudnn896.sif /app/test_alphafold.py
+    
+    Model presets:
+    - monomer: Single chain prediction (fastest)
+    - monomer_casp14: 8 model ensemble as used in CASP14
+    - monomer_ptm: Single chain with pTM score and PAE
+    - multimer: Multi-chain complex prediction
+    
+    Database presets:
+    - reduced_dbs: Uses small_bfd (faster, less accurate)
+    - full_dbs: Full BFD database (slower, more accurate)
+    
+    Notes:
+    - The --nv flag is REQUIRED for GPU support
+    - Ensure databases are downloaded to data_dir
+    - Output includes PDB files, confidence metrics, and MSAs
+    - H100 GPUs: Use --use_gpu_relax=false due to OpenMM compatibility
+

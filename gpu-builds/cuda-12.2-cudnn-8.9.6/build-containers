@@ -1,0 +1,51 @@
+#!/bin/bash -x
+
+if [[ $# -ne 2 ]] ; then
+   echo "usage: $0 dest-dir build-idx" 1>&2
+   exit 1
+fi
+dest_dir=$1
+idx=$2
+
+flavor=cuda-12.2-cudnn-8.9.6
+build_dir=/home/olson/BV-BRC/runtime_build/gpu-builds
+
+rel=137-12
+runtime=$build_dir/runtime-$rel.tgz
+packages=$build_dir/packages-$rel.txt
+
+if [[ ! -f $runtime ]] ; then
+    echo "Runtime $runtime is missing" 2>&1
+fi
+   
+if [[ ! -f $packages ]] ; then
+    echo "Packages file $packages is missing" 2>&1
+fi
+
+base_container=$dest_dir/base-$idx.sif
+app_container=$dest_dir/app-$idx.sif
+   
+if [[ ! -f $base_container ]] ; then
+
+	apptainer build \
+	   $base_container \
+	   $build_dir/$flavor/base-build.def
+
+#	   --build-arg runtime=$runtime
+#	   --build-arg packages=$packages
+
+
+fi
+
+if [[ ! -f $app_container ]] ; then
+
+    apptainer build \
+	      --build-arg base=$base_container \
+	      --build-arg runtime=$runtime \
+	      --build-arg packages=$packages \
+	      --warn-unused-build-args \
+	      $app_container \
+	      $build_dir/$flavor/reqts-alphafold.def
+
+fi
+

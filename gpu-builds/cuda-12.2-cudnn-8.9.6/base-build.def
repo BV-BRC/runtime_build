@@ -1,0 +1,105 @@
+# This is a Singularity definition file for building an Ubuntu 22.04 container
+# with NVIDIA drivers, CUDA 12.2, cuDNN 8.9.6, and Miniforge.
+
+Bootstrap: docker
+From: nvidia/cuda:12.2.0-devel-ubuntu22.04
+
+# %setup
+
+# Moving runtime setup into final deployment step
+# mkdir -p ${APPTAINER_ROOTFS}/opt
+# tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 
+
+# %files
+
+# {{packages}} /opt/package-list.txt
+
+%post -c /bin/bash
+
+set -e
+set -o pipefail
+
+    export DEBIAN_FRONTEND=noninteractive
+
+    # Update the package list and install necessary dependencies
+    apt-get update && apt-get install -y --no-install-recommends \
+        wget \
+	curl \
+        gnupg2 \
+        ca-certificates \
+        build-essential \
+        software-properties-common \
+        libgl1-mesa-glx \
+        libglib2.0-0 \
+        cmake \
+        git \
+        hmmer \
+        kalign \
+        tzdata \
+        wget less strace vim-tiny  \
+	gdb \
+	locales 
+#	$(cat /opt/package-list.txt)
+
+
+    locale-gen en_US.UTF-8
+
+    # Add NVIDIA's official CUDA repository
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.0-1_all.deb
+    dpkg -i cuda-keyring_1.0-1_all.deb
+    apt-get update
+
+#
+#  To force vers 535 of drivers
+#
+if false ; then
+apt-get remove -y nvidia-driver-* libnvidia-compute-* 
+
+apt-get install -y --allow-change-held-packages \
+    nvidia-driver-535 cuda-cudart-12-2 libcublas-12-2 libcublas-dev-12-2 
+
+else
+
+    # Install CUDA 12.2 and explicitly allow changes to held packages
+#    apt-get -y --allow-change-held-packages install cuda-12-2 libcublas-12-2 libcublas-dev-12-2
+  apt-get -y --allow-change-held-packages install \
+          cuda-toolkit-12-2 \
+	  libcublas-12-2 \
+	  libcublas-dev-12-2
+  
+fi
+
+    # Install cuDNN 8.9.6 directly from the NVIDIA repository
+    apt-get -y install libcudnn8=8.9.6.* libcudnn8-dev=8.9.6.* libcudnn8-samples=8.9.6.*
+
+    # Fix CUDNN symlinks for JAX compatibility
+    cd /usr/lib/x86_64-linux-gnu/
+    for lib in libcudnn libcudnn_adv_infer libcudnn_adv_train libcudnn_cnn_infer libcudnn_cnn_train \
+    	    libcudnn_ops_infer libcudnn_ops_train; do
+        if [ -f "${lib}.so.8.9.6" ]; then
+            ln -sf "${lib}.so.8.9.6" "${lib}.so.8"
+            ln -sf "${lib}.so.8.9.6" "${lib}.so"
+        fi
+    done
+
+    # Install Miniforge (instead of Miniconda)
+    wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O Miniforge3.sh
+    bash Miniforge3.sh -b -p /opt/miniforge
+    rm Miniforge3.sh
+    /opt/miniforge/bin/conda init bash
+
+    # Clean up
+    apt-get clean
+    rm -rf /var/lib/apt/lists/* \
+           cuda-keyring_1.0-1_all.deb
+
+%environment
+    # Set environment variables for CUDA, cuDNN, and Miniforge
+    export PATH=/usr/local/cuda/bin:/opt/miniforge/bin:$PATH
+    # export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH
+    export CUDNN_VERSION=8.9.6
+
+%runscript
+    # Default command to run when the container is executed
+    echo "This container includes CUDA 12.2, cuDNN 8.9.6, and Miniforge."
+    exec "$@"
