@@ -8,7 +8,7 @@ From: nvidia/cuda:12.2.0-devel-ubuntu22.04
     CUDNN-Version 8.9.6
     JAX-Version 0.4.26
     Python-Version 3.11
-    Description AlphaFold protein structure prediction system with CUDNN 8.9.6
+    Description AlphaFold + Chai-1 + Boltz + ESMFold + predict-structure with CUDNN 8.9.6
 
 %files
 {{packages}} /opt/package-list.txt
@@ -27,7 +27,7 @@ if [[ -d /local_databases/chai ]] ; then
 fi
 if [[ -d /local_databases/boltz ]] ; then
 fi
-    export PATH="/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
+    export PATH="/opt/conda-predict/bin:/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
     export CUDNN_VERSION=8.9.6
     export PYTHONPATH="/app/alphafold:$PYTHONPATH"
     export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
@@ -43,12 +43,15 @@ fi
     export CHAI_DOWNLOADS_DIR=/local_databases/chai
 export DISABLE_PANDERA_IMPORT_WARNING=True
     export BOLTZ_CACHE=/local_databases/boltz
+if [[ -d /local_databases/esmfold ]] ; then
+    export HF_HOME=/local_databases/esmfold
+fi
 
 %setup
 
 # === Setup from: add-runtime.def ===
 mkdir -p ${APPTAINER_ROOTFS}/opt
-tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 
+tar -C ${APPTAINER_ROOTFS}/opt --no-same-owner -x -f {{runtime}}
 
 
 %post -c /bin/bash
@@ -343,6 +346,51 @@ EOF
     # curl -o preload_boltz_cache.sh https://github.com/olsonanl/boltzApp/raw/refs/heads/main/container/preload_boltz_cache.sh
     # chmod +x preload_boltz_cache.sh
     # ./preload_boltz_cache.sh $BOLTZ_CACHE
+
+
+# === Stage from: reqts-esmfold.def ===
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    conda_dir=/opt/conda-esmfold
+
+    conda create -p $conda_dir --yes --quiet python=3.11
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install PyTorch with CUDA (cu124 needed for torch>=2.6)
+    pip install 'torch>=2.6' --index-url https://download.pytorch.org/whl/cu124
+
+    # Install ESMFoldApp (provides esm-fold-hf CLI + torch, transformers, accelerate, biopython)
+    pip install --no-cache-dir "git+https://github.com/wilke/ESMFoldApp.git#subdirectory=esm_hf"
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+
+
+# === Stage from: reqts-predict-structure.def ===
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    conda_dir=/opt/conda-predict
+
+    conda create -p $conda_dir --yes --quiet python=3.12
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install predict-structure CLI with chai (pyarrow) and cwl extras
+    pip install --no-cache-dir "predict-structure[chai,cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+
+    # Symlink into /usr/local/bin for easy access
+    ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
 
 
 # === Stage from: add-packages.def ===
