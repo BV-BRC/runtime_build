@@ -43,9 +43,15 @@ fi
     export CHAI_DOWNLOADS_DIR=/local_databases/chai
 export DISABLE_PANDERA_IMPORT_WARNING=True
     export BOLTZ_CACHE=/local_databases/boltz
+    export LD_LIBRARY_PATH=/opt/conda-boltz/lib/python3.11/site-packages/nvidia/cu13/lib:$LD_LIBRARY_PATH
 if [[ -d /local_databases/esmfold ]] ; then
     export HF_HOME=/local_databases/esmfold
 fi
+    # Headless matplotlib backend for protein_compare (no display needed)
+    export MPLBACKEND=Agg
+    # DSSP/libcifpp looks for components.cif here; bind-mount from host:
+    #   --bind /local_databases/libcifpp:/local_databases/libcifpp
+    export CIFPP_DATA_DIR=/local_databases/libcifpp
 
 %setup
 
@@ -293,8 +299,10 @@ EOF
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    pip install torch>=2.3.1 --index-url https://download.pytorch.org/whl/cu121
-    pip install chai-lab
+    # Install PyTorch with CUDA 12.1 wheels, then Chai with same index
+    # --extra-index-url ensures chai-lab resolves torch from cu121 too
+    pip install 'torch>=2.3.1' --index-url https://download.pytorch.org/whl/cu121
+    pip install chai-lab --extra-index-url https://download.pytorch.org/whl/cu121
 
     #
     # Models are too large for the container. We separately
@@ -326,12 +334,10 @@ EOF
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    # Install PyTorch with CUDA
-
-    pip install torch>=2.2 --index-url https://download.pytorch.org/whl/cu121
-
-    # Install Boltz
-    pip install boltz[cuda]
+    # Install PyTorch with CUDA 12.1 wheels, then Boltz with same index
+    # --extra-index-url ensures boltz[cuda] resolves torch from cu121 too
+    pip install 'torch>=2.2' --index-url https://download.pytorch.org/whl/cu121
+    pip install boltz[cuda] --extra-index-url https://download.pytorch.org/whl/cu121
 
     #
     # Models are too large for the container. We separately
@@ -382,11 +388,15 @@ EOF
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    # Install predict-structure CLI with chai (pyarrow) and cwl extras
-    pip install --no-cache-dir "predict-structure[chai,cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+    # Install predict-structure CLI (pyarrow, pyyaml etc. are base deps; cwl extra adds cwltool)
+    pip install --no-cache-dir "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+
+    # Install protein_compare — structure analysis/comparison tool (dssp-based)
+    pip install --no-cache-dir "git+https://github.com/wilke/protein_structure_analysis.git"
 
     # Symlink into /usr/local/bin for easy access
     ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
+    ln -sf $conda_dir/bin/protein_compare /usr/local/bin/protein_compare
 
     # Clean up
     conda clean --all --force-pkgs-dirs --yes
@@ -397,7 +407,18 @@ EOF
 
     apt-get update -y
     apt-get install -y --no-install-recommends \
+	dssp \
 	$(cat /opt/package-list.txt)
+
+    # CCD compound data for DSSP/libcifpp.
+    # Default path is /var/cache/libcifpp/components.cif (~800 MB).
+    # To avoid baking this into the image, bind-mount it at runtime instead:
+    #   --bind /local_databases/libcifpp:/var/cache/libcifpp
+    # and place components.cif in /local_databases/libcifpp/.
+    # Alternatively, set CIFPP_DATA_DIR=/local_databases/libcifpp at runtime.
+    # Uncomment the lines below to bake it into the image:
+    # mkdir -p /var/cache/libcifpp
+    # curl -o /var/cache/libcifpp/components.cif https://files.wwpdb.org/pub/pdb/data/monomers/components.cif
 
 
 %runscript
