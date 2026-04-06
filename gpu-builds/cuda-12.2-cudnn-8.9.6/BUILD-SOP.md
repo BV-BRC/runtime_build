@@ -103,7 +103,7 @@ conda_dir=/opt/conda-predict
 conda create -p $conda_dir --yes --quiet python=3.12
 conda activate $conda_dir
 
-pip install --no-cache-dir "predict-structure[chai,cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+pip install --no-cache-dir "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
 
 ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
 
