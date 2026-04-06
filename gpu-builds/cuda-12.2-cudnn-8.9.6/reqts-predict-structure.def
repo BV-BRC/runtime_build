@@ -13,8 +13,8 @@ From: {{base}}
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    # Install predict-structure CLI with chai (pyarrow) and cwl extras
-    pip install --no-cache-dir "predict-structure[chai,cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+    # Install predict-structure CLI (pyarrow, pyyaml etc. are base deps; cwl extra adds cwltool)
+    pip install --no-cache-dir "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
 
     # Symlink into /usr/local/bin for easy access
     ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
@@ -27,7 +27,7 @@ From: {{base}}
     export PATH=/opt/conda-predict/bin:$PATH
 
 %runscript
-    exec predict-structure "$@"
+    exec "$@"
 
 %labels
     Description Unified protein structure prediction CLI (Boltz-2, Chai-1, AlphaFold2, ESMFold)
