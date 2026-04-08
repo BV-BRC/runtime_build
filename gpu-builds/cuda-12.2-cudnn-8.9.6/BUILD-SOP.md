@@ -176,6 +176,7 @@ rm -rf /scout/tmp/all-sandbox
 | Boltz-2 | `/opt/conda-boltz` | `/opt/conda-boltz/bin/boltz predict` |
 | Chai-1 | `/opt/conda-chai` | `/opt/conda-chai/bin/chai-lab fold` |
 | ESMFold | `/opt/conda-esmfold` | `/opt/conda-esmfold/bin/esm-fold-hf` |
+| OpenFold 3 | `/opt/conda-openfold` | `/opt/conda-openfold/bin/run_openfold predict` |
 
 ## Symlink convention
 

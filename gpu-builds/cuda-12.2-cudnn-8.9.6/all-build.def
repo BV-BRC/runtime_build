@@ -8,7 +8,7 @@ From: nvidia/cuda:12.2.0-devel-ubuntu22.04
     CUDNN-Version 8.9.6
     JAX-Version 0.4.26
     Python-Version 3.11
-    Description AlphaFold + Chai-1 + Boltz + ESMFold + predict-structure with CUDNN 8.9.6
+    Description AlphaFold + Chai-1 + Boltz + ESMFold + OpenFold 3 + predict-structure with CUDNN 8.9.6
 
 %files
 {{packages}} /opt/package-list.txt
@@ -47,11 +47,17 @@ export DISABLE_PANDERA_IMPORT_WARNING=True
 if [[ -d /local_databases/esmfold ]] ; then
     export HF_HOME=/local_databases/esmfold
 fi
+    # OpenFold 3 model weights and CCD data (bind-mount from host)
+if [[ -d /local_databases/openfold ]] ; then
+    export OPENFOLD_DATA_DIR=/local_databases/openfold
+fi
     # Headless matplotlib backend for protein_compare (no display needed)
     export MPLBACKEND=Agg
     # DSSP/libcifpp looks for components.cif here; bind-mount from host:
     #   --bind /local_databases/libcifpp:/local_databases/libcifpp
     export CIFPP_DATA_DIR=/local_databases/libcifpp
+    # DeepSpeed Triton cache (OpenFold 3) — use job working dir to avoid NFS slowdowns
+    export TRITON_CACHE_DIR=${P3_WORKDIR:-/tmp}/triton
 
 %setup
 
@@ -371,6 +377,38 @@ EOF
 
     # Install ESMFoldApp (provides esm-fold-hf CLI + torch, transformers, accelerate, biopython)
     pip install --no-cache-dir "git+https://github.com/wilke/ESMFoldApp.git#subdirectory=esm_hf"
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+
+
+# === Stage from: reqts-openfold.def ===
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    # MPI needed by DeepSpeed (OpenFold dependency)
+    apt-get update && apt-get install -y --no-install-recommends libopenmpi-dev
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    conda_dir=/opt/conda-openfold
+
+    conda create -p $conda_dir --yes --quiet python=3.11
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # PyTorch 2.5.1 with cu121 (matches OpenFold's Docker image, compatible with CUDA 12.2)
+    pip install 'torch==2.5.1' --index-url https://download.pytorch.org/whl/cu121
+
+    # Install OpenFold 3
+    # Note: cuEquivariance acceleration requires CUDA >=12.6.1 and torch>=2.7,
+    # not supported with our CUDA 12.2 base. OpenFold runs correctly without it.
+    pip install --no-cache-dir openfold3 --extra-index-url https://download.pytorch.org/whl/cu121
+
+    # Symlink into /usr/local/bin
+    ln -sf $conda_dir/bin/run_openfold /usr/local/bin/run_openfold
 
     # Clean up
     conda clean --all --force-pkgs-dirs --yes
