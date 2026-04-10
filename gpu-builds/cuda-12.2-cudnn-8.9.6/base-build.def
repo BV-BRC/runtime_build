@@ -38,7 +38,8 @@ set -o pipefail
         tzdata \
         wget less strace vim-tiny  \
 	gdb \
-	locales 
+	locales \
+	unzip
 #	$(cat /opt/package-list.txt)
 
 
