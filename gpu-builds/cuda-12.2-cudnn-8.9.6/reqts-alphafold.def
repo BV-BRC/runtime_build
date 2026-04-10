@@ -152,7 +152,6 @@ EOF
     # It has to come before /usr/lib/x86_64-linux-gnu
     export PATH="/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
     #    export LD_LIBRARY_PATH="/opt/miniforge/lib:/usr/local/cuda-12.2/lib64:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
-    export PYTHONPATH="/app/alphafold:$PYTHONPATH"
     
     # Conda settings
     export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"

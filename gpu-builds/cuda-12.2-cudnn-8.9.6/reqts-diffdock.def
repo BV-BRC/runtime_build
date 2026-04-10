@@ -1,0 +1,133 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%post -c /bin/bash
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    conda_dir=/opt/conda-diffdock
+
+. /opt/miniforge/etc/profile.d/conda.sh
+
+    # Create conda environment with Python 3.11
+    conda create -p $conda_dir --yes --quiet python=3.11
+
+    conda activate $conda_dir
+
+    # Ensure setuptools<71 is installed (needed for pkg_resources used by pytorch-lightning)
+    pip install --upgrade pip wheel
+    pip install 'setuptools<71'
+
+    # Install conda packages first (openbabel and rdkit work better via conda)
+    # Install matplotlib via conda to avoid libstdc++ version mismatch
+    conda install --yes --quiet -c conda-forge openbabel rdkit matplotlib
+
+    # Install PyTorch 2.1.2 with CUDA 12.1 (H100/H200 compatible)
+    pip install torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2 \
+        --index-url https://download.pytorch.org/whl/cu121
+
+    # Install PyTorch Geometric ecosystem
+    pip install torch-geometric==2.4.0
+
+    # Install PyG extensions (pre-compiled for PyTorch 2.1 + CUDA 12.1)
+    pip install torch-scatter torch-sparse torch-cluster torch-spline-conv \
+        -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+
+    # DiffDock core dependencies
+    pip install e3nn==0.5.1 \
+                pytorch-lightning==2.1.0 \
+                torchmetrics==1.2.0 \
+                fair-esm==1.0.3
+
+    # Scientific computing
+    pip install numpy==1.24.3 \
+                scipy==1.11.3 \
+                pandas==2.0.3 \
+                scikit-learn==1.3.2
+
+    # Molecular modeling
+    pip install biopython==1.81 \
+                biopandas==0.4.1 \
+                mdanalysis==2.6.1 \
+                spyrmsd==0.5.2 \
+                prody
+
+    # Utilities
+    pip install pyyaml==6.0.1 \
+                tqdm==4.66.1 \
+                networkx==3.1 \
+                sympy==1.12 \
+                filelock==3.13.1 \
+                requests==2.31.0
+
+    # Configuration and typing
+    pip install pydantic==1.10.13 \
+                typing-extensions==4.8.0
+
+    # Fix libstdc++ issues: pip packages overwrite conda packages with versions
+    # compiled against newer libstdc++. Remove pip versions and reinstall via conda.
+    pip uninstall -y matplotlib rdkit rdkit-pypi || true
+    conda install --yes -c conda-forge matplotlib rdkit --force-reinstall
+
+    # Verify rdkit installation
+    python -c "from rdkit import Chem; print('rdkit verification: OK')"
+
+    # Set up conda activation scripts for LD_LIBRARY_PATH
+    # This ensures conda's libstdc++ (with GLIBCXX_3.4.31+) is used only when env is active
+    mkdir -p $conda_dir/etc/conda/activate.d
+    mkdir -p $conda_dir/etc/conda/deactivate.d
+
+    cat > $conda_dir/etc/conda/activate.d/env_vars.sh << 'EOF'
+#!/bin/bash
+export OLD_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="/opt/conda-diffdock/lib:$LD_LIBRARY_PATH"
+EOF
+
+    cat > $conda_dir/etc/conda/deactivate.d/env_vars.sh << 'EOF'
+#!/bin/bash
+export LD_LIBRARY_PATH="$OLD_LD_LIBRARY_PATH"
+unset OLD_LD_LIBRARY_PATH
+EOF
+
+    # Clone DiffDock repository
+    cd /opt
+    git clone https://github.com/gcorso/DiffDock.git diffdock
+    cd diffdock
+    # Checkout version 1.1 (DiffDock-L compatible)
+    git checkout v1.1
+
+    # Pre-generate SO3/torus cache files (avoids slow first-run computation)
+    cd /opt/diffdock && python -c "from utils.so3 import *; from utils.torus import *"
+
+    # Download DiffDock-L model weights (single zip containing score_model and confidence_model)
+    cd /opt/diffdock
+    mkdir -p workdir/v1.1
+    cd workdir/v1.1
+    wget https://github.com/gcorso/DiffDock/releases/download/v1.1/diffdock_models.zip
+    unzip diffdock_models.zip
+    rm diffdock_models.zip
+
+    # Download ESM model weights (used for protein embeddings)
+    mkdir -p /opt/esm_models
+    cd /opt/esm_models
+    wget -q https://dl.fbaipublicfiles.com/fair-esm/models/esm2_t33_650M_UR50D.pt
+    wget -q https://dl.fbaipublicfiles.com/fair-esm/regression/esm2_t33_650M_UR50D-contact-regression.pt
+
+    # Install gnina for CNN affinity scoring (optional but recommended)
+    cd /opt
+    wget -q https://github.com/gnina/gnina/releases/download/v1.1/gnina
+    chmod +x gnina
+    mv gnina $conda_dir/bin/
+
+%environment
+    export DIFFDOCK_DIR=/opt/diffdock
+    export BVDOC_ESM_MODEL=/opt/esm_models/esm2_t33_650M_UR50D.pt
+
+%runscript
+
+%labels
+    Author BV-BRC
+    Description DiffDock-L molecular docking environment with PyTorch 2.1 for H100/H200 GPUs
+
