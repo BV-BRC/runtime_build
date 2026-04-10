@@ -27,7 +27,7 @@ if [[ -d /local_databases/chai ]] ; then
 fi
 if [[ -d /local_databases/boltz ]] ; then
 fi
-    export PATH="/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
+    export PATH="/opt/conda-predict/bin:/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
     export CUDNN_VERSION=8.9.6
     export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
     export PYTHONNOUSERSITE=1
@@ -49,7 +49,7 @@ export DISABLE_PANDERA_IMPORT_WARNING=True
 
 # === Setup from: add-runtime.def ===
 mkdir -p ${APPTAINER_ROOTFS}/opt
-tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 
+tar -C ${APPTAINER_ROOTFS}/opt --no-same-owner -x -f {{runtime}}
 
 
 %post -c /bin/bash
@@ -292,8 +292,10 @@ EOF
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    pip install torch>=2.3.1 --index-url https://download.pytorch.org/whl/cu121
-    pip install chai-lab
+    # Install PyTorch with CUDA 12.1 wheels, then Chai with same index
+    # --extra-index-url ensures chai-lab resolves torch from cu121 too
+    pip install 'torch>=2.3.1' --index-url https://download.pytorch.org/whl/cu121
+    pip install chai-lab --extra-index-url https://download.pytorch.org/whl/cu121
 
     #
     # Models are too large for the container. We separately
@@ -325,12 +327,10 @@ EOF
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    # Install PyTorch with CUDA
-
-    pip install torch>=2.2 --index-url https://download.pytorch.org/whl/cu121
-
-    # Install Boltz
-    pip install boltz[cuda]
+    # Install PyTorch with CUDA 12.1 wheels, then Boltz with same index
+    # --extra-index-url ensures boltz[cuda] resolves torch from cu121 too
+    pip install 'torch>=2.2' --index-url https://download.pytorch.org/whl/cu121
+    pip install boltz[cuda] --extra-index-url https://download.pytorch.org/whl/cu121
 
     #
     # Models are too large for the container. We separately
@@ -471,7 +471,18 @@ EOF
 
     apt-get update -y
     apt-get install -y --no-install-recommends \
+	dssp \
 	$(cat /opt/package-list.txt)
+
+    # CCD compound data for DSSP/libcifpp.
+    # Default path is /var/cache/libcifpp/components.cif (~800 MB).
+    # To avoid baking this into the image, bind-mount it at runtime instead:
+    #   --bind /local_databases/libcifpp:/var/cache/libcifpp
+    # and place components.cif in /local_databases/libcifpp/.
+    # Alternatively, set CIFPP_DATA_DIR=/local_databases/libcifpp at runtime.
+    # Uncomment the lines below to bake it into the image:
+    # mkdir -p /var/cache/libcifpp
+    # curl -o /var/cache/libcifpp/components.cif https://files.wwpdb.org/pub/pdb/data/monomers/components.cif
 
 
 %runscript

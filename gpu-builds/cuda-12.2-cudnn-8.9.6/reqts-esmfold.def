@@ -1,0 +1,35 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%post -c /bin/bash
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    conda_dir=/opt/conda-esmfold
+
+    conda create -p $conda_dir --yes --quiet python=3.11
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install PyTorch with CUDA
+    pip install 'torch>=2.6' --index-url https://download.pytorch.org/whl/cu124
+
+    # Install ESMFoldApp (provides esm-fold-hf CLI + torch, transformers, accelerate, biopython)
+    pip install --no-cache-dir "git+https://github.com/wilke/ESMFoldApp.git#subdirectory=esm_hf"
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+
+%environment
+
+if [[ -d /local_databases/esmfold ]] ; then
+    export HF_HOME=/local_databases/esmfold
+fi
+
+%runscript
+
+%labels

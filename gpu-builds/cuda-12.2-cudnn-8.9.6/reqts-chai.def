@@ -14,8 +14,10 @@ From: {{base}}
     . /opt/miniforge/etc/profile.d/conda.sh
     conda activate $conda_dir
 
-    pip install torch>=2.3.1 --index-url https://download.pytorch.org/whl/cu121
-    pip install chai-lab
+    # Install PyTorch with CUDA 12.1 wheels, then Chai with same index
+    # --extra-index-url ensures chai-lab resolves torch from cu121 too
+    pip install 'torch>=2.3.1' --index-url https://download.pytorch.org/whl/cu121
+    pip install chai-lab --extra-index-url https://download.pytorch.org/whl/cu121
 
     #
     # Models are too large for the container. We separately

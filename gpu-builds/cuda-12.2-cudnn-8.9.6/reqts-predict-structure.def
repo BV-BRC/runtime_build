@@ -1,0 +1,33 @@
+
+Bootstrap: localimage
+From: {{base}}
+
+%post -c /bin/bash
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    conda_dir=/opt/conda-predict
+
+    conda create -p $conda_dir --yes --quiet python=3.12
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install predict-structure CLI (pyarrow, pyyaml etc. are base deps; cwl extra adds cwltool)
+    pip install --no-cache-dir "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+
+    # Symlink into /usr/local/bin for easy access
+    ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+
+%environment
+    export PATH=/opt/conda-predict/bin:$PATH
+
+%runscript
+    exec "$@"
+
+%labels
+    Description Unified protein structure prediction CLI (Boltz-2, Chai-1, AlphaFold2, ESMFold)
