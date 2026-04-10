@@ -8,7 +8,7 @@ From: nvidia/cuda:12.2.0-devel-ubuntu22.04
     CUDNN-Version 8.9.6
     JAX-Version 0.4.26
     Python-Version 3.11
-    Description DiffDock-L molecular docking environment with PyTorch 2.1 for H100/H200 GPUs
+    Description Unified protein structure prediction CLI (Boltz-2, Chai-1, AlphaFold2, ESMFold)
 
 %files
 {{packages}} /opt/package-list.txt
@@ -27,7 +27,10 @@ if [[ -d /local_databases/chai ]] ; then
 fi
 if [[ -d /local_databases/boltz ]] ; then
 fi
-    export PATH="/opt/conda-predict/bin:/opt/conda-alphafold:/opt/hhsuite/bin:$PATH"
+# OpenFold 3 model weights and CCD data (bind-mount from host)
+if [[ -d /local_databases/openfold ]] ; then
+fi
+    export PATH=/opt/conda-predict/bin:$PATH
     export CUDNN_VERSION=8.9.6
     export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
     export PYTHONNOUSERSITE=1
@@ -44,12 +47,13 @@ export DISABLE_PANDERA_IMPORT_WARNING=True
     export BOLTZ_CACHE=/local_databases/boltz
     export DIFFDOCK_DIR=/opt/diffdock
     export BVDOC_ESM_MODEL=/opt/esm_models/esm2_t33_650M_UR50D.pt
+    export OPENFOLD_DATA_DIR=/local_databases/openfold
 
 %setup
 
 # === Setup from: add-runtime.def ===
 mkdir -p ${APPTAINER_ROOTFS}/opt
-tar -C ${APPTAINER_ROOTFS}/opt --no-same-owner -x -f {{runtime}}
+tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 
 
 
 %post -c /bin/bash
@@ -79,7 +83,8 @@ set -o pipefail
         wget less strace vim-tiny  \
 	gdb \
 	locales \
-	unzip
+	unzip \
+	dssp
 #	$(cat /opt/package-list.txt)
 
 
@@ -467,22 +472,63 @@ EOF
     mv gnina $conda_dir/bin/
 
 
+# === Stage from: reqts-openfold.def ===
+    # Set non-interactive frontend and auto-accept conda terms
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    # MPI needed by DeepSpeed (OpenFold dependency)
+    apt-get update && apt-get install -y --no-install-recommends libopenmpi-dev
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    conda_dir=/opt/conda-openfold
+
+    conda create -p $conda_dir --yes --quiet python=3.11
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # PyTorch 2.5.1 with cu121 (matches OpenFold's Docker image, compatible with CUDA 12.2)
+    pip install 'torch==2.5.1' --index-url https://download.pytorch.org/whl/cu121
+
+    # Install OpenFold 3
+    pip install --no-cache-dir openfold3 --extra-index-url https://download.pytorch.org/whl/cu121
+
+    # Symlink into /usr/local/bin
+    ln -sf $conda_dir/bin/run_openfold /usr/local/bin/run_openfold
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+
+
+# === Stage from: reqts-predict-structure.def ===
+    export DEBIAN_FRONTEND=noninteractive
+    export CONDA_PLUGINS_AUTO_ACCEPT_TOS="yes"
+
+    conda_dir=/opt/conda-predict
+
+    conda create -p $conda_dir --yes --quiet python=3.12
+
+    . /opt/miniforge/etc/profile.d/conda.sh
+    conda activate $conda_dir
+
+    # Install predict-structure CLI (pyarrow, pyyaml etc. are base deps; cwl extra adds cwltool)
+    pip install --no-cache-dir "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
+
+    # Symlink into /usr/local/bin for easy access
+    ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
+
+    # Clean up
+    conda clean --all --force-pkgs-dirs --yes
+    pip cache purge
+
+
 # === Stage from: add-packages.def ===
 
     apt-get update -y
     apt-get install -y --no-install-recommends \
-	dssp \
 	$(cat /opt/package-list.txt)
-
-    # CCD compound data for DSSP/libcifpp.
-    # Default path is /var/cache/libcifpp/components.cif (~800 MB).
-    # To avoid baking this into the image, bind-mount it at runtime instead:
-    #   --bind /local_databases/libcifpp:/var/cache/libcifpp
-    # and place components.cif in /local_databases/libcifpp/.
-    # Alternatively, set CIFPP_DATA_DIR=/local_databases/libcifpp at runtime.
-    # Uncomment the lines below to bake it into the image:
-    # mkdir -p /var/cache/libcifpp
-    # curl -o /var/cache/libcifpp/components.cif https://files.wwpdb.org/pub/pdb/data/monomers/components.cif
 
 
 %runscript
@@ -495,6 +541,9 @@ EOF
 # --- From: reqts-alphafold.def ---
     cd /app/alphafold
     exec /app/run_alphafold.sh "$@"
+
+# --- From: reqts-predict-structure.def ---
+    exec "$@"
 
 
 %help

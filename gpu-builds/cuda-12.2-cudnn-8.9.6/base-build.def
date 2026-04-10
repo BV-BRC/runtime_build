@@ -39,7 +39,8 @@ set -o pipefail
         wget less strace vim-tiny  \
 	gdb \
 	locales \
-	unzip
+	unzip \
+	dssp
 #	$(cat /opt/package-list.txt)
 
 
