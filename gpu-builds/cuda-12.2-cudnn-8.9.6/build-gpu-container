@@ -1,0 +1,140 @@
+#!/bin/bash
+
+#
+# Build a GPU container with all requirements merged into a single def file.
+#
+# The container will be named with a date tag of the form YYYY-MM-DD.XXX
+# where XXX is an index number incremented by one for each build done on the same day.
+#
+# Usage: build-gpu-container [-v VERSION] [BUILD_DIR]
+#   -v VERSION   Runtime version (default: 143-12)
+#   BUILD_DIR    Container build directory (default: /container-build)
+#
+
+set -e
+
+# Default values
+DEFAULT_VERSION="143-12"
+VERSION="$DEFAULT_VERSION"
+
+# Set up apptainer cache and tmp locations
+export APPTAINER_CACHEDIR=/disks/tmp/singularity-cache-$USER
+mkdir -p $APPTAINER_CACHEDIR
+export APPTAINER_TMPDIR=/dev/shm/gpu-build-$USER
+mkdir -p $APPTAINER_TMPDIR
+
+# Parse command line options
+while getopts "v:" opt; do
+    case $opt in
+        v)
+            VERSION="$OPTARG"
+            ;;
+        \?)
+            echo "Usage: $0 [-v VERSION] [BUILD_DIR]" >&2
+            exit 1
+            ;;
+    esac
+done
+shift $((OPTIND-1))
+
+# Container build directory (positional argument after options)
+BUILD_DIR="${1:-/container-build}"
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Set runtime and packages paths based on version
+RUNTIME="$PARENT_DIR/runtime-${VERSION}.tgz"
+PACKAGES="$PARENT_DIR/packages-${VERSION}.txt"
+
+# Verify runtime and packages files exist
+if [[ ! -f "$RUNTIME" ]]; then
+    echo "ERROR: Runtime file not found: $RUNTIME" >&2
+    exit 1
+fi
+if [[ ! -f "$PACKAGES" ]]; then
+    echo "ERROR: Packages file not found: $PACKAGES" >&2
+    exit 1
+fi
+
+echo "Using runtime version: $VERSION"
+echo "  Runtime: $RUNTIME"
+echo "  Packages: $PACKAGES"
+
+# Generate the NAME with date tag YYYY-MM-DD.XXX
+DATE_TAG=$(date +%Y-%m-%d)
+
+# Find the next index for today's date
+INDEX=1
+while true; do
+    NAME=$(printf "%s.%03d" "$DATE_TAG" "$INDEX")
+    DEF_FILE="$BUILD_DIR/build.${NAME}.def"
+    SIF_FILE="$BUILD_DIR/base-gpu.${NAME}.sif"
+
+    # If neither the def file nor the sif file exist, we can use this index
+    if [[ ! -f "$DEF_FILE" && ! -f "$SIF_FILE" ]]; then
+        break
+    fi
+    ((INDEX++))
+done
+
+echo "Build name: $NAME"
+echo "Build directory: $BUILD_DIR"
+echo "Definition file: $DEF_FILE"
+echo "Container image: $SIF_FILE"
+
+# Ensure build directory exists
+mkdir -p "$BUILD_DIR"
+
+# Define the def files to merge
+DEF_FILES=(
+    "$SCRIPT_DIR/base-build.def"
+    "$SCRIPT_DIR/reqts-alphafold.def"
+    "$SCRIPT_DIR/reqts-chai.def"
+    "$SCRIPT_DIR/reqts-boltz.def"
+    "$SCRIPT_DIR/reqts-diffdock.def"
+    "$PARENT_DIR/add-runtime.def"
+    "$PARENT_DIR/add-packages.def"
+)
+
+# Check that all def files exist
+echo ""
+echo "Checking input definition files..."
+MISSING_FILES=()
+for def in "${DEF_FILES[@]}"; do
+    if [[ -f "$def" ]]; then
+        echo "  Found: $def"
+    else
+        echo "  MISSING: $def"
+        MISSING_FILES+=("$def")
+    fi
+done
+
+if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
+    echo ""
+    echo "ERROR: Missing definition files:"
+    for f in "${MISSING_FILES[@]}"; do
+        echo "  $f"
+    done
+    exit 1
+fi
+
+# Merge the definition files
+echo ""
+echo "Merging definition files into $DEF_FILE..."
+"$SCRIPT_DIR/merge_singularity_defs.py" \
+    "${DEF_FILES[@]}" \
+    -o "$DEF_FILE"
+
+echo ""
+echo "Building container $SIF_FILE..."
+apptainer build \
+    --build-arg packages="$PACKAGES" \
+    --build-arg runtime="$RUNTIME" \
+    "$SIF_FILE" "$DEF_FILE"
+
+echo ""
+echo "Build complete!"
+echo "  Definition file: $DEF_FILE"
+echo "  Container image: $SIF_FILE"
