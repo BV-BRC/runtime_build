@@ -37,16 +37,20 @@ my $dir = "ThermoMPNN-D";
 
 my $app_dest = "$dest/$dir/github";
 my $app_conda = "$dest/$dir/conda";
-my $vers = "78e1939";
+my $vers = "d5c3f871def54f1cdf378b4a88cc4af8e502d00e";
+#my $vers = "78e1939";
 
 system("rm", "-rf", $app_dest);
 system("rm", "-rf", $dir);
 
-run("git", "clone", "https://github.com/Tinyman392/ThermoMPNN-D", $app_dest);
+my $here = getcwd();
+
+run("git", "clone", "https://github.com/olsonanl/ThermoMPNN-D", $app_dest);
+#run("git", "clone", "https://github.com/Tinyman392/ThermoMPNN-D", $app_dest);
 chdir $app_dest or die "Cannot chdir $app_dest: $!";
 run("git", "checkout", $vers);
 
-run(". $dest/conda/bin/activate; conda env update -p $app_conda -f ./environment.yaml; conda install -c conda-forge -p $app_conda mkl=2023.2.0");
+run(". $dest/conda/bin/activate; conda env update -p $app_conda -f ./environment.yaml");
 
 #
 # Create wrapper script in $dest/bin that sets up paths properly
