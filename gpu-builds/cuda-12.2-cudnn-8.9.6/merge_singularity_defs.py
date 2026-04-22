@@ -14,6 +14,8 @@ Usage:
     merge_singularity_defs.py *.def -o merged.def --from nvidia/cuda:12.1.0-runtime-ubuntu22.04
 """
 
+from __future__ import annotations
+
 import argparse
 import re
 import sys

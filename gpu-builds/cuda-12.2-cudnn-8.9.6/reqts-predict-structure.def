@@ -16,8 +16,12 @@ From: {{base}}
     # Install predict-structure CLI (pyarrow, pyyaml etc. are base deps; cwl extra adds cwltool)
     pip install --no-cache-dir "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
 
+    # Install protein_compare — structure analysis/comparison tool
+    pip install --no-cache-dir "git+https://github.com/wilke/protein_structure_analysis.git"
+
     # Symlink into /usr/local/bin for easy access
     ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
+    ln -sf $conda_dir/bin/protein_compare /usr/local/bin/protein_compare
 
     # Clean up
     conda clean --all --force-pkgs-dirs --yes
