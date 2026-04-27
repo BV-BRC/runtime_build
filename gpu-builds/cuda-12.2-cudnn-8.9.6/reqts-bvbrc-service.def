@@ -72,14 +72,8 @@ Stage: final
         cp -r /build/dev_container/modules/$mod/lib/* $KB_DEPLOYMENT/lib/ 2>/dev/null || true
     done
 
-    # Upgrade predict-structure CLI to latest from git (base SIF may have older version)
-    . /opt/miniforge/etc/profile.d/conda.sh
-    conda activate /opt/conda-predict
-    pip install --no-cache-dir --upgrade \
-        "predict-structure[cwl] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git" \
-        "git+https://github.com/wilke/protein_structure_analysis.git"
-
-    # Clone and deploy the app repo via dev_container bootstrap/make
+    # Clone and deploy the Perl app via dev_container bootstrap/make
+    # (Python tools are installed by reqts-predict-structure.def)
     cd /build/dev_container/modules
     git clone --depth 1 {{app_repo}} PredictStructureApp || true
 
