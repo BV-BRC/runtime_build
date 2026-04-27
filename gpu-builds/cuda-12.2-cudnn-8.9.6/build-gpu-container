@@ -35,8 +35,8 @@ fi
 mkdir -p "$APPTAINER_CACHEDIR"
 
 if [[ -z "$APPTAINER_TMPDIR" ]]; then
-    if [[ -d /scout/tmp ]]; then
-        export APPTAINER_TMPDIR=/scout/tmp
+    if [[ -d /disks/tmp ]]; then
+        export APPTAINER_TMPDIR=/disks/tmp
     else
         export APPTAINER_TMPDIR=/tmp
     fi
