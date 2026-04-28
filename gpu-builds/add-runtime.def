@@ -4,4 +4,4 @@ From: {{base}}
 
 %setup
 mkdir -p ${APPTAINER_ROOTFS}/opt
-tar -C ${APPTAINER_ROOTFS}/opt -x -f {{runtime}} 
+tar -C ${APPTAINER_ROOTFS}/opt --no-same-owner -x -f {{runtime}}

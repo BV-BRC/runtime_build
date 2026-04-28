@@ -1,0 +1,130 @@
+
+# Layer BV-BRC AppService integration on top of the folding container.
+#
+# Copies the Perl runtime and deployed BV-BRC modules from the
+# dev_container Docker image, then clones and deploys the app repo.
+#
+# Usage (layered on existing SIF):
+#   apptainer build --fakeroot \
+#       --build-arg base=/scout/containers/folding_prod.sif \
+#       --build-arg app_repo=https://github.com/CEPI-dxkb/PredictStructureApp.git \
+#       folding-bvbrc.sif reqts-bvbrc-service.def
+#
+# The resulting image can run as:
+#   CLI:     apptainer exec --nv folding-bvbrc.sif predict-structure boltz ...
+#   Service: apptainer exec --nv folding-bvbrc.sif App-PredictStructure params.json
+
+# Stage 1: Source for BV-BRC Perl runtime and build system
+Bootstrap: docker
+From: dxkb/dev_container:cuda12-ubuntu22.04
+Stage: devcontainer
+
+# Stage 2: Layer onto the folding container
+Bootstrap: localimage
+From: {{base}}
+Stage: final
+
+%labels
+    Description BV-BRC AppService integration for protein structure prediction
+
+# Copy individual subdirs to avoid nesting (base SIF already has /opt/patric-common/)
+%files from devcontainer
+    /opt/patric-common/runtime /opt/patric-common/runtime
+    /opt/patric-common/deployment /opt/patric-common/deployment
+    /build/dev_container /build/dev_container
+
+%post -c /bin/bash
+    set -e
+    export DEBIAN_FRONTEND=noninteractive
+
+    # SSL/TLS libs needed by Net::SSLeay (BV-BRC workspace client)
+    apt-get update && apt-get install -y --no-install-recommends \
+        libssl-dev \
+        zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+    # BV-BRC environment
+    export RT=/opt/patric-common/runtime
+    export KB_DEPLOYMENT=/opt/patric-common/deployment
+    export KB_TOP=$KB_DEPLOYMENT
+    export PATH=$KB_DEPLOYMENT/bin:$RT/bin:$PATH
+    export PERL5LIB=$KB_DEPLOYMENT/lib:$RT/lib/perl5
+
+    # Install missing CPAN modules for BV-BRC services
+    $RT/bin/cpanm --notest \
+        Net::SSLeay IO::Socket::SSL LWP::Protocol::https \
+        REST::Client Class::Accessor Carp::Always \
+    && rm -rf ~/.cpanm
+
+    # Additional BV-BRC modules (SEED libraries)
+    cd /build/dev_container/modules
+    git clone --depth 1 https://github.com/TheSEED/seed_core.git 2>/dev/null || true
+    git clone --depth 1 https://github.com/TheSEED/seed_gjo.git 2>/dev/null || true
+
+    cd /build/dev_container
+    . ./user-env.sh
+    cd modules/seed_core && make -k 2>/dev/null || true
+    cd ../seed_gjo && make -k 2>/dev/null || true
+
+    # Copy SEED libs into deployment
+    mkdir -p $KB_DEPLOYMENT/lib
+    for mod in seed_core seed_gjo; do
+        cp -r /build/dev_container/modules/$mod/lib/* $KB_DEPLOYMENT/lib/ 2>/dev/null || true
+    done
+
+    # Clone and deploy the Perl app via dev_container bootstrap/make
+    # (Python tools are installed by reqts-predict-structure.def)
+    cd /build/dev_container/modules
+    git clone --depth 1 {{app_repo}} PredictStructureApp || true
+
+    # Deploy app using the BV-BRC build system (bootstrap + make deploy-service)
+    cd /build/dev_container
+    . ./user-env.sh
+    cd modules/PredictStructureApp && make deploy-service 2>/dev/null || true
+
+    # Fallback: also copy service-scripts and app_specs directly in case
+    # make deploy-service didn't fully work (e.g. missing Makefile.common)
+    mkdir -p /kb/module/service-scripts \
+             /kb/module/app_specs \
+             /kb/module/lib
+
+    cp /build/dev_container/modules/PredictStructureApp/app_specs/*.json /kb/module/app_specs/ 2>/dev/null || true
+    cp /build/dev_container/modules/PredictStructureApp/service-scripts/*.pl /kb/module/service-scripts/ 2>/dev/null || true
+    chmod +x /kb/module/service-scripts/*.pl 2>/dev/null || true
+
+    # Create entrypoint dispatcher
+    cat > /entrypoint.sh << 'ENTRY'
+#!/bin/bash
+case "$1" in
+    App-PredictStructure*)
+        exec $RT/bin/perl /kb/module/service-scripts/App-PredictStructure.pl "${@:2}"
+        ;;
+    predict-structure)
+        shift
+        exec predict-structure "$@"
+        ;;
+    protein_compare)
+        shift
+        exec protein_compare "$@"
+        ;;
+    bash|sh)
+        exec "$@"
+        ;;
+    *)
+        exec "$@"
+        ;;
+esac
+ENTRY
+    chmod +x /entrypoint.sh
+
+%environment
+    export RT=/opt/patric-common/runtime
+    export KB_DEPLOYMENT=/opt/patric-common/deployment
+    export KB_TOP=/opt/patric-common/deployment
+    export KB_MODULE_DIR=/kb/module
+    export PERL5LIB=$KB_DEPLOYMENT/lib:$RT/lib/perl5
+    export PATH=$KB_DEPLOYMENT/bin:$RT/bin:$PATH
+    export IN_BVBRC_CONTAINER=1
+
+%runscript
+    exec /entrypoint.sh "$@"
