@@ -6,9 +6,15 @@
 # The container will be named with a date tag of the form YYYY-MM-DD.XXX
 # where XXX is an index number incremented by one for each build done on the same day.
 #
-# Usage: build-gpu-container [-v VERSION] [BUILD_DIR]
-#   -v VERSION   Runtime version (default: 143-12)
-#   BUILD_DIR    Container build directory (default: /container-build/gpu-builds/cuda-12.2-cudnn-8.9.6)
+# Usage: build-gpu-container [-v VERSION] [-r RUNTIME_DIR] [BUILD_DIR]
+#   -v VERSION      Runtime version (default: 143-12)
+#   -r RUNTIME_DIR  Directory containing runtime-<VERSION>.tgz and packages-<VERSION>.txt
+#                   (default: parent of this script's directory, i.e. gpu-builds/)
+#   BUILD_DIR       Container build directory (default: /scout/tmp)
+#
+# Environment variables:
+#   APPTAINER_TMPDIR  — scratch directory for apptainer builds (default: /scout/tmp or /tmp)
+#   APPTAINER_CACHEDIR — OCI image cache (default: $HOME/.apptainer/cache)
 #
 
 set -e
@@ -16,21 +22,38 @@ set -e
 # Default values
 DEFAULT_VERSION="143-12"
 VERSION="$DEFAULT_VERSION"
+RUNTIME_DIR=""
 
-# Set up apptainer cache and tmp locations
-export APPTAINER_CACHEDIR=/disks/tmp/singularity-cache-$USER
-mkdir -p $APPTAINER_CACHEDIR
-export APPTAINER_TMPDIR=/dev/shm/gpu-build-$USER
-mkdir -p $APPTAINER_TMPDIR
+# Set up apptainer cache and tmp locations (user-overridable)
+if [[ -z "$APPTAINER_CACHEDIR" ]]; then
+    if [[ -d /disks/tmp ]]; then
+        export APPTAINER_CACHEDIR=/disks/tmp/singularity-cache-$USER
+    else
+        export APPTAINER_CACHEDIR=$HOME/.apptainer/cache
+    fi
+fi
+mkdir -p "$APPTAINER_CACHEDIR"
+
+if [[ -z "$APPTAINER_TMPDIR" ]]; then
+    if [[ -d /disks/tmp ]]; then
+        export APPTAINER_TMPDIR=/disks/tmp
+    else
+        export APPTAINER_TMPDIR=/tmp
+    fi
+fi
+mkdir -p "$APPTAINER_TMPDIR"
 
 # Parse command line options
-while getopts "v:" opt; do
+while getopts "v:r:" opt; do
     case $opt in
         v)
             VERSION="$OPTARG"
             ;;
+        r)
+            RUNTIME_DIR="$OPTARG"
+            ;;
         \?)
-            echo "Usage: $0 [-v VERSION] [BUILD_DIR]" >&2
+            echo "Usage: $0 [-v VERSION] [-r RUNTIME_DIR] [BUILD_DIR]" >&2
             exit 1
             ;;
     esac
@@ -38,29 +61,43 @@ done
 shift $((OPTIND-1))
 
 # Container build directory (positional argument after options)
-BUILD_DIR="${1:-/container-build/gpu-builds/cuda-12.2-cudnn-8.9.6}"
+BUILD_DIR="${1:-/scout/tmp}"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 
+# Runtime directory: -r flag > parent dir > olson's path (fallback)
+if [[ -z "$RUNTIME_DIR" ]]; then
+    if [[ -f "$PARENT_DIR/runtime-${VERSION}.tgz" ]]; then
+        RUNTIME_DIR="$PARENT_DIR"
+    elif [[ -f /home/olson/BV-BRC/runtime_build/gpu-builds/runtime-${VERSION}.tgz ]]; then
+        RUNTIME_DIR="/home/olson/BV-BRC/runtime_build/gpu-builds"
+    else
+        RUNTIME_DIR="$PARENT_DIR"
+    fi
+fi
+
 # Set runtime and packages paths based on version
-RUNTIME="$PARENT_DIR/runtime-${VERSION}.tgz"
-PACKAGES="$PARENT_DIR/packages-${VERSION}.txt"
+RUNTIME="$RUNTIME_DIR/runtime-${VERSION}.tgz"
+PACKAGES="$RUNTIME_DIR/packages-${VERSION}.txt"
 
 # Verify runtime and packages files exist
 if [[ ! -f "$RUNTIME" ]]; then
     echo "ERROR: Runtime file not found: $RUNTIME" >&2
+    echo "  Use -r to specify the directory containing runtime-${VERSION}.tgz" >&2
     exit 1
 fi
 if [[ ! -f "$PACKAGES" ]]; then
     echo "ERROR: Packages file not found: $PACKAGES" >&2
+    echo "  Use -r to specify the directory containing packages-${VERSION}.txt" >&2
     exit 1
 fi
 
 echo "Using runtime version: $VERSION"
 echo "  Runtime: $RUNTIME"
 echo "  Packages: $PACKAGES"
+echo "  APPTAINER_TMPDIR: $APPTAINER_TMPDIR"
 
 # Generate the NAME with date tag YYYY-MM-DD.XXX
 DATE_TAG=$(date +%Y-%m-%d)
@@ -87,13 +124,15 @@ echo "Container image: $SIF_FILE"
 # Ensure build directory exists
 mkdir -p "$BUILD_DIR"
 
-# Define the def files to merge
+# Define the def files to merge (order matters — base first, add-runtime/packages last)
 DEF_FILES=(
     "$SCRIPT_DIR/base-build.def"
     "$SCRIPT_DIR/reqts-alphafold.def"
     "$SCRIPT_DIR/reqts-chai.def"
     "$SCRIPT_DIR/reqts-boltz.def"
     "$SCRIPT_DIR/reqts-diffdock.def"
+    "$SCRIPT_DIR/reqts-esmfold.def"
+    "$SCRIPT_DIR/reqts-openfold.def"
     "$SCRIPT_DIR/reqts-predict-structure.def"
     "$PARENT_DIR/add-runtime.def"
     "$PARENT_DIR/add-packages.def"
@@ -130,7 +169,7 @@ echo "Merging definition files into $DEF_FILE..."
 
 echo ""
 echo "Building container $SIF_FILE..."
-apptainer build \
+apptainer build --fakeroot \
     --build-arg packages="$PACKAGES" \
     --build-arg runtime="$RUNTIME" \
     "$SIF_FILE" "$DEF_FILE"
