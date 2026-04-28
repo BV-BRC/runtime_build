@@ -123,7 +123,9 @@ EOF
 
 %environment
     export DIFFDOCK_DIR=/opt/diffdock
-    export BVDOC_ESM_MODEL=/opt/esm_models/esm2_t33_650M_UR50D.pt
+    export BVDOCK_DIFFDOCK_DIR=/opt/diffdock
+    export BVDOCK_ESM_MODEL=/opt/esm_models/esm2_t33_650M_UR50D.pt
+    export BVDOCK_CONDA_ENV=/opt/conda-diffdock
 
 %runscript
 

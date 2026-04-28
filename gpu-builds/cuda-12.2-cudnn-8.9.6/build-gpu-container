@@ -8,7 +8,7 @@
 #
 # Usage: build-gpu-container [-v VERSION] [BUILD_DIR]
 #   -v VERSION   Runtime version (default: 143-12)
-#   BUILD_DIR    Container build directory (default: /container-build)
+#   BUILD_DIR    Container build directory (default: /container-build/gpu-builds/cuda-12.2-cudnn-8.9.6)
 #
 
 set -e
@@ -38,7 +38,7 @@ done
 shift $((OPTIND-1))
 
 # Container build directory (positional argument after options)
-BUILD_DIR="${1:-/container-build}"
+BUILD_DIR="${1:-/container-build/gpu-builds/cuda-12.2-cudnn-8.9.6}"
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -94,6 +94,7 @@ DEF_FILES=(
     "$SCRIPT_DIR/reqts-chai.def"
     "$SCRIPT_DIR/reqts-boltz.def"
     "$SCRIPT_DIR/reqts-diffdock.def"
+    "$SCRIPT_DIR/reqts-predict-structure.def"
     "$PARENT_DIR/add-runtime.def"
     "$PARENT_DIR/add-packages.def"
 )
