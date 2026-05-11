@@ -14,6 +14,7 @@ From: {{base}}
     conda activate $conda_dir
 
     # Install predict-structure CLI with all extras (cwl, rocrate, etc.)
+#    pip install --no-cache-dir "predict-structure[all] @ git+https://github.com/olsonanl/PredictStructureApp.git"
     pip install --no-cache-dir "predict-structure[all] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
 
     # Install protein_compare — structure analysis/comparison tool
