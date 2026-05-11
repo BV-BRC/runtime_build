@@ -17,7 +17,7 @@ From: {{base}}
     $conda_dir/bin/pip install --no-cache-dir "predict-structure[all] @ git+https://github.com/CEPI-dxkb/PredictStructureApp.git"
 
     # Install protein_compare — structure analysis/comparison tool
-    $conda_dir/bin/pip install --no-cache-dir "git+https://github.com/wilke/protein_structure_analysis.git"
+    $conda_dir/bin/pip install --no-cache-dir "git+https://github.com/BV-BRC/protein_structure_analysis.git"
 
     # Symlink into /usr/local/bin for easy access
     ln -sf $conda_dir/bin/predict-structure /usr/local/bin/predict-structure
