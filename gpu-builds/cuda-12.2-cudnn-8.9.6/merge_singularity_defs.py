@@ -214,6 +214,8 @@ class DefMerger:
             if not df.post.is_empty():
                 if self.add_stage_comments and df.source_path:
                     merged.post.append(f"\n# === Stage from: {df.source_path.name} ===")
+                    merged.post.append(f"\necho \"================\"")
+                    merged.post.append(f"\necho \"Stage from: {df.source_path.name} ===\"")
                 merged.post.extend(df.post.lines)
                 # Use first non-empty flags, warn if conflicting
                 if df.post.flags:
