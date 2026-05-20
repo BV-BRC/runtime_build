@@ -15,6 +15,7 @@ if (@ARGV)
     $top_dest = shift;
 }
 
+my $vers = "1.4.0";
 my $dest = $top_dest;
 
 my $build_tools = $ENV{BUILD_TOOLS} || "$dest/build-tools";
@@ -37,6 +38,7 @@ run("rm", "-rf", $dir);
 run("git", "clone", "https://github.com/google/highway", $dir);
 
 chdir($dir) or die "cannot chdir $dir: $!";
+run("git", "checkout", $vers);
 
 make_path("build");
 chdir("build") or die "cannot chdir build: $!";
