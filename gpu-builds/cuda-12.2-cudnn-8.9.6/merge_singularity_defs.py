@@ -226,26 +226,42 @@ class DefMerger:
         if post_flags:
             merged.post.flags = post_flags
 
-        # Merge %environment (deduplicate export statements)
-        env_vars = {}  # var_name -> full_line (last wins)
-        env_other = []  # Non-export lines
+        # Merge %environment sections.
+        # Deduplicate top-level (non-conditional) export statements (last wins),
+        # but preserve conditional blocks intact so exports inside if/for/while/case
+        # are not separated from their surrounding control flow.
+        env_vars = {}   # var_name -> index in env_lines (for last-wins dedup)
+        env_lines = []  # ordered lines; None means removed by dedup
+
         for df in deffiles:
+            nesting = 0
             for line in df.environment.lines:
                 stripped = line.strip()
-                # Match export VAR=value or VAR=value
-                export_match = re.match(r"^(export\s+)?(\w+)=(.*)$", stripped)
-                if export_match:
-                    var_name = export_match.group(2)
-                    env_vars[var_name] = line
-                elif stripped and not stripped.startswith("#"):
-                    env_other.append(line)
-                elif stripped.startswith("#"):
-                    env_other.append(line)
 
-        for line in env_other:
-            merged.environment.append(line)
-        for line in env_vars.values():
-            merged.environment.append(line)
+                # Track shell control-flow nesting before processing the line
+                if re.match(r'^(if|for|while|until|case)\b', stripped):
+                    nesting += 1
+
+                if nesting == 0:
+                    export_match = re.match(r"^(export\s+)?(\w+)=(.*)$", stripped)
+                    if export_match:
+                        var_name = export_match.group(2)
+                        if var_name in env_vars:
+                            env_lines[env_vars[var_name]] = None  # remove earlier duplicate
+                        env_vars[var_name] = len(env_lines)
+                        env_lines.append(line)
+                    else:
+                        env_lines.append(line)
+                else:
+                    env_lines.append(line)
+
+                # Decrement nesting after closing keywords
+                if re.match(r'^(fi|done|esac)\b', stripped):
+                    nesting = max(0, nesting - 1)
+
+        for line in env_lines:
+            if line is not None:
+                merged.environment.append(line)
 
         # Merge %labels (deduplicate, last wins)
         labels = {}  # label_name -> value
