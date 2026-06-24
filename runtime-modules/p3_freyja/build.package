@@ -45,7 +45,8 @@ run("$runtime/conda/bin/conda", "install", "-y",
     "-c", "bioconda",
     "-c", "conda-forge",
     "freyja==$vers",
-    "pandas>=2.2.0");
+    "pandas>=2.2.0",
+    "pyarrow");
 
 #
 # We remove the default data files so that we can ensure we only use the ones we expect
