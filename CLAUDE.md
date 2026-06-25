@@ -85,6 +85,14 @@ Each subdirectory is a self-contained module with its own build script (typicall
 | `CPATH` | Set to `$TARGET/include` |
 | `LIBRARY_PATH` | Set to `$TARGET/lib` |
 
+### Rust-based modules
+
+Ubuntu 22's apt cargo tops out at 1.75, which is too old for crates that require Rust edition 2024 (needs ≥ 1.85). Rust modules should install a current stable toolchain via rustup into `$TARGET/build-tools/cargo` and `$TARGET/build-tools/rustup`, reusing it on subsequent builds. See `runtime-modules/p3_skani/build.package` as the reference pattern.
+
+### Container merging tool
+
+`gpu-builds/cuda-12.2-cudnn-8.9.6/merge_singularity_defs.py` merges multiple Singularity/Apptainer `.def` files into one. It concatenates `%post` sections in order and deduplicates top-level `%environment` exports (last wins), while preserving conditional blocks (`if`/`for`/`while`/`case`) intact.
+
 ### tools/error_handler
 
 Bash function (`error()`) sourced by build scripts for consistent error reporting with line numbers.
