@@ -30,7 +30,7 @@ if (! -d $p3)
     }
 }
 my $vers = "v2.1.6.3";
-my $url = "https://gite.lirmm.fr/atgc/FastME/";
+my $url = "https://github.com/BV-BRC-dependencies/FastME";
 
 my $dir = "FastME";
 
