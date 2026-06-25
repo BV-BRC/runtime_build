@@ -1,0 +1,58 @@
+#!/usr/bin/env perl
+
+use strict;
+
+use Carp;
+use File::Basename;
+use Cwd 'abs_path';
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+
+-d $dest || mkdir $dest;
+
+my $build_tools = "$dest/build-tools";
+
+#
+# skani requires Rust >= 1.85 (edition 2024). The Ubuntu 22 apt package tops
+# out at 1.75, so we install a stable toolchain via rustup into build-tools.
+#
+my $cargo_home  = "$build_tools/cargo";
+my $rustup_home = "$build_tools/rustup";
+
+$ENV{CARGO_HOME}  = $cargo_home;
+$ENV{RUSTUP_HOME} = $rustup_home;
+
+if (! -x "$cargo_home/bin/cargo")
+{
+    run("curl", "--proto", "=https", "--tlsv1.2", "-sSf",
+        "https://sh.rustup.rs", "-o", "rustup-init.sh");
+    run("sh", "rustup-init.sh", "-y", "--no-modify-path", "--default-toolchain", "stable");
+    unlink("rustup-init.sh");
+}
+
+$ENV{PATH} = "$cargo_home/bin:$ENV{PATH}";
+
+my $repo = "https://github.com/bluenote-1577/skani";
+my $vers = "v0.3.2";
+my $dir  = "skani";
+
+system("rm", "-rf", $dir);
+run("git", "clone", $repo, $dir);
+chdir($dir) or die "Cannot chdir $dir: $!";
+run("git", "checkout", $vers);
+unlink("Cargo.lock");
+run("cargo", "build", "--release");
+run("/bin/cp", "target/release/skani", "$dest/bin/skani");
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
