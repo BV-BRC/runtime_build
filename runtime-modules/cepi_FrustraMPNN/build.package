@@ -1,0 +1,58 @@
+#!/usr/bin/env perl
+
+#
+# The FrustraMPNN installation relies on the ThermoMPNN conda environment for its dependencies. 
+# It is just a python install from the source github.
+#
+
+use strict;
+
+use Carp;
+use File::Basename;
+use Cwd qw(getcwd abs_path);
+
+my $dest = $ENV{TARGET} || "/kb/runtime";
+my $parallel = 4;
+
+if (@ARGV)
+{
+    $dest = shift;
+    print STDERR "Overriding destination to $dest\n";
+}
+my $runtime = $dest;
+if (@ARGV)
+{
+    $runtime = shift;
+}
+
+my $p3 = "/disks/patric-common/runtime";
+if (! -d $p3)
+{
+    $p3 = $dest;
+    if (! -d $p3)
+    {
+	die "Cannot find $p3\n";
+    }
+}
+
+my $thermo_dir = "ThermoMPNN-D";
+my $app_conda = "$dest/$thermo_dir/conda";
+my $app_dir = "$dest/FrustraMPNN/github";
+
+#
+# Latest commit as of this building (9/2026) was on 5/18/2026.
+#
+my $vers = "3a03cdc300bfe24c4bb70e60207118532bc73b3b";
+
+run("git", "clone", "https://github.com/RosettaCommons/frustraMPNN", $app_dir);
+chdir $app_dir or die "Cannot chdir $app_dir $!";
+run("git", "checkout", $vers);
+
+run("$app_conda/bin/pip", "install", ".[all]");
+
+sub run
+{
+    print "@_\n";
+    my $rc = system(@_);
+    $rc == 0 or die "Command failed with rc=$rc: @_\n";
+}
